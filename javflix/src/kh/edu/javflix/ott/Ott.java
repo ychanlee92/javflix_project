@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class Ott implements Comparable<Ott>, Serializable {
+	private String user;
 	private int number;
 	private String title;
 	private String country;
@@ -14,6 +15,7 @@ public class Ott implements Comparable<Ott>, Serializable {
 	private String year;
 	private String rate;
 	private String age;
+	private String isAdd;
 	private String isSeen;
 	private String isDown;
 	private int viewer;
@@ -22,9 +24,10 @@ public class Ott implements Comparable<Ott>, Serializable {
 		super();
 	}
 
-	public Ott(int number, String title, String country, String story, String genre, String actor, String director,
-			String year, String rate, String age, String isSeen, String isDown, int viewer) {
+	public Ott(String user, int number, String title, String country, String story, String genre, String actor, String director,
+			String year, String rate, String age, String isAdd, String isSeen, String isDown, int viewer) {
 		super();
+		this.user = user;
 		this.number = number;
 		this.title = title;
 		this.country = country;
@@ -35,8 +38,29 @@ public class Ott implements Comparable<Ott>, Serializable {
 		this.year = year;
 		this.rate = rate;
 		this.age = age;
+		this.isAdd = isAdd;
 		this.isSeen = isSeen;
 		this.isDown = isDown;
+		this.viewer = viewer;
+	}
+
+	public String getIsAdd() {
+		return isAdd;
+	}
+
+	public void setIsAdd(String isAdd) {
+		this.isAdd = isAdd;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public void setViewer(int viewer) {
 		this.viewer = viewer;
 	}
 
@@ -165,6 +189,14 @@ public class Ott implements Comparable<Ott>, Serializable {
 	public int compareTo(Ott o) {
 		// TODO Auto-generated method stub
 		return this.viewer-o.viewer;
+	}
+
+	@Override
+	public String toString() {
+		return "Ott [user=" + user + ", number=" + number + ", title=" + title + ", country=" + country + ", story="
+				+ story + ", genre=" + genre + ", actor=" + actor + ", director=" + director + ", year=" + year
+				+ ", rate=" + rate + ", age=" + age + ", isAdd=" + isAdd + ", isSeen=" + isSeen + ", isDown=" + isDown
+				+ ", viewer=" + viewer + "]";
 	}
 
 }

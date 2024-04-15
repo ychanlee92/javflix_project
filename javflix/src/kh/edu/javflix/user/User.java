@@ -1,8 +1,13 @@
 package kh.edu.javflix.user;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-public class User implements Serializable{
+import kh.edu.javflix.ott.Ott;
+
+public class User implements Serializable {
 	private String name;
 	private String id;
 	private int password;
@@ -14,7 +19,7 @@ public class User implements Serializable{
 	private String membership;
 	private static final String adminId = "admin";
 	private static final String adminPassword = "admin1234";
-	
+
 	public static String getAdminid() {
 		return adminId;
 	}
@@ -26,7 +31,7 @@ public class User implements Serializable{
 	public User() {
 		super();
 	}
-	
+
 	public User(String name, String id, int password, String phone, String profileName1, int profilePassword1,
 			String profileName2, int profilePassword2, String membership) {
 		super();
@@ -41,7 +46,6 @@ public class User implements Serializable{
 		this.membership = membership;
 	}
 
-	
 	public String getName() {
 		return name;
 	}
@@ -115,10 +119,22 @@ public class User implements Serializable{
 	}
 
 	@Override
-	public String toString() {
-		return "User [name=" + name + ", id=" + id + ", password=" + password + ", phone=" + phone + ", profileName1="
-				+ profileName1 + ", profilePassword1=" + profilePassword1 + ", profileName2=" + profileName2
-				+ ", profilePassword2=" + profilePassword2 + ", membership=" + membership + "]";
+	public int hashCode() {
+		return Objects.hash(id, name, profileName1, profileName2);
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		User other = (User) obj;
+		return Objects.equals(id, other.id) && Objects.equals(name, other.name)
+				&& Objects.equals(profileName1, other.profileName1) && Objects.equals(profileName2, other.profileName2);
+	}
+
+	 
 }
