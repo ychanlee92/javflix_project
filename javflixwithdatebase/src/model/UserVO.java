@@ -11,6 +11,17 @@ public class UserVO {
 	public UserVO() {
 		super();
 	}
+	
+	public UserVO(String user_name, String user_id, String user_pass, String user_phone,
+			 String user_membership) {
+			super();
+			this.user_name = user_name;
+			this.user_id = user_id;
+			this.user_pass = user_pass;
+			this.user_phone = user_phone;
+			this.user_membership = user_membership;
+		}
+	
 	public UserVO(int user_num, String user_name, String user_id, String user_pass, String user_phone,
 		 String user_membership) {
 		super();

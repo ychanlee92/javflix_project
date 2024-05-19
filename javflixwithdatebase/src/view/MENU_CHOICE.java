@@ -9,7 +9,6 @@ public interface MENU_CHOICE {
 	int DOWNLIST = 6;
 	int WATCHLIST = 7;
 	int ACCOUNT = 8;
-	int QNA = 9;
-	int LOGOUT = 10;
+	int LOGOUT = 9;
 	
 }

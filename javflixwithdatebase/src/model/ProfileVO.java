@@ -10,6 +10,13 @@ public class ProfileVO {
 		super();
 	}
 
+	public ProfileVO(String profile_name, String profile_pass, String user_id) {
+		super();
+		this.profile_name = profile_name;
+		this.profile_pass = profile_pass;
+		this.user_id = user_id;
+	}
+	
 	public ProfileVO(int profile_num, String profile_name, String profile_pass, String user_id) {
 		super();
 		this.profile_num = profile_num;

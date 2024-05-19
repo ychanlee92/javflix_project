@@ -17,6 +17,35 @@ public class OttVO {
 		super();
 	}
 	
+	public OttVO(String ott_title, String ott_country, String ott_story, String ott_genre,
+			String ott_actor, String ott_director, String ott_year, double ott_rate, String ott_age) {
+		super();
+		this.ott_title = ott_title;
+		this.ott_country = ott_country;
+		this.ott_story = ott_story;
+		this.ott_genre = ott_genre;
+		this.ott_actor = ott_actor;
+		this.ott_director = ott_director;
+		this.ott_year = ott_year;
+		this.ott_rate = ott_rate;
+		this.ott_age = ott_age;
+	}
+	
+	public OttVO(String ott_title, String ott_country, String ott_story, String ott_genre,
+			String ott_actor, String ott_director, String ott_year, double ott_rate, String ott_age, int ott_view) {
+		super();
+		this.ott_title = ott_title;
+		this.ott_country = ott_country;
+		this.ott_story = ott_story;
+		this.ott_genre = ott_genre;
+		this.ott_actor = ott_actor;
+		this.ott_director = ott_director;
+		this.ott_year = ott_year;
+		this.ott_rate = ott_rate;
+		this.ott_age = ott_age;
+		this.ott_view = ott_view;
+	}
+	
 	public OttVO(int ott_num, String ott_title, String ott_country, String ott_story, String ott_genre,
 			String ott_actor, String ott_director, String ott_year, double ott_rate, String ott_age, int ott_view) {
 		super();
@@ -31,6 +60,14 @@ public class OttVO {
 		this.ott_rate = ott_rate;
 		this.ott_age = ott_age;
 		this.ott_view = ott_view;
+	}
+
+	public OttVO(String ott_title, String ott_story, String ott_genre, Double ott_rate) {
+		super();
+		this.ott_title = ott_title;
+		this.ott_story = ott_story;
+		this.ott_genre = ott_genre;
+		this.ott_rate = ott_rate;
 	}
 
 	public int getOtt_num() {

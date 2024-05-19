@@ -3,7 +3,7 @@ package model;
 public class CartVO {
 	private int cart_num = 0;
 	private String profile_name = null;
-	private String ott_num = null;
+	private int ott_num = 0;
 	private String cart_seen = null;
 	private String cart_down = null;
 	private String cart_add = null;
@@ -12,7 +12,7 @@ public class CartVO {
 		super();
 	}
 	
-	public CartVO(int cart_num, String profile_name, String ott_num, String cart_seen, String cart_down,
+	public CartVO(int cart_num, String profile_name, int ott_num, String cart_seen, String cart_down,
 			String cart_add) {
 		super();
 		this.cart_num = cart_num;
@@ -39,11 +39,11 @@ public class CartVO {
 		this.profile_name = profile_name;
 	}
 
-	public String getOtt_num() {
+	public int getOtt_num() {
 		return ott_num;
 	}
 
-	public void setOtt_num(String ott_num) {
+	public void setOtt_num(int ott_num) {
 		this.ott_num = ott_num;
 	}
 

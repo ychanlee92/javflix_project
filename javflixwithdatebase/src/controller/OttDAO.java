@@ -13,10 +13,11 @@ import model.OttVO;
 import model.ProfileVO;
 import view.MenuViewer;
 import view.OPTION_CHOICE;
-import view.OTT_CHOICE;
 
 public class OttDAO {
 	public static Scanner sc = new Scanner(System.in);
+	static ProfileVO profile = new ProfileVO();
+	static CartVO cart = new CartVO();
 
 	public void getOttTotalList() {
 		Connection con = null;
@@ -79,14 +80,7 @@ public class OttDAO {
 			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
 			System.out.print(ott.getOtt_genre() + "\t|");
 			if (ott.getOtt_actor().length() < 10) {
-				
-				
-				
 				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
-				
-				
-				
-				
 			} else {
 				System.out.printf("%-10s %1s", ott.getOtt_actor().substring(0, 8) + "..", "\t|");
 			}
@@ -159,7 +153,7 @@ public class OttDAO {
 		}
 	}
 
-	public void optionChoose() {
+	public void optionChoose(ProfileVO pro) throws InterruptedException {
 		System.out.print("Ott번호를 선택하세요: ");
 		int number = Integer.parseInt(sc.nextLine());
 		int choice = 0;
@@ -167,12 +161,13 @@ public class OttDAO {
 		choice = Integer.parseInt(sc.nextLine());
 		switch (choice) {
 		case OPTION_CHOICE.WATCH:
-			watchOtt(number);
+			watchOtt(number, pro);
 			break;
 		case OPTION_CHOICE.ADD:
-			addOtt(number);
+			addOtt(number, pro);
 			break;
 		case OPTION_CHOICE.DOWN:
+			downOtt(number, pro);
 			return;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
@@ -186,13 +181,12 @@ public class OttDAO {
 		return number;
 	}
 
-	public static void downOtt(int number) {
+	public static void downOtt(int number, ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
-		ProfileVO profile = new ProfileVO();
-		CartVO cart = new CartVO();
+		ArrayList<CartVO> cartList = new ArrayList();
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_ott order by ott_num";
@@ -213,36 +207,54 @@ public class OttDAO {
 				ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
 						ott_year, ott_rate, ott_age, ott_view);
 			}
-			String sq2 = "select * from jav_profile order by profile_num";
-			pstmt = con.prepareStatement(sq2);
-			rs = pstmt.executeQuery();
-			while (rs.next()) {
-				int profile_num = rs.getInt("profile_num");
-				String profile_name = rs.getString("profile_name");
-				String profile_pass = rs.getString("profile_pass");
-				String user_id = rs.getString("user_id");
-				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
-			}
-			String sql3 = "select * from jav_cart order by cart_num";
-			pstmt = con.prepareStatement(sql3);
+			String sql2 = "select * from jav_cart where profile_name = ? order by cart_num";
+			pstmt = con.prepareStatement(sql2);
+			pstmt.setString(1, pro.getProfile_name());
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				int cart_num = rs.getInt("cart_num");
 				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
+				int ott_num = rs.getInt("ott_num");
 				String cart_seen = rs.getString("cart_seen");
 				String cart_down = rs.getString("cart_down");
 				String cart_add = rs.getString("cart_add");
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+				cartList.add(cart);
 			}
-			if (profile.getProfile_name() != null && cart.getProfile_name() != null
-					&& cart.getProfile_name().contains(profile.getProfile_name()) && cart.getOtt_num().equals(number)) {
-				if (cart.getCart_down().equals("다운완료")) {
+			String sql3 = "select u.user_membership from jav_profile p inner join jav_user u where p.user_id = ?";
+			pstmt = con.prepareStatement(sql3);
+			pstmt.setString(1, pro.getUser_id());
+			rs = pstmt.executeQuery();
+			String user_membership = null;
+			while (rs.next()) {
+				user_membership = rs.getString("user_membership");
+			}
+			if (!user_membership.equals("premium")) {
+				System.out.println("오프라인 저장 기능은 premium등급부터 이용가능합니다. ");
+			} else {
+				if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number
+						&& s.getCart_down().equals("다운완료"))) {
 					System.out.println("이미 다운받은 ott입니다.");
-				} else {
-					String sql4 = "update jav_cart set cart_down ?";
+				} else if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number)) {
+					String sql4 = "update jav_cart set cart_down = ? where ott_num = ?";
 					pstmt = con.prepareStatement(sql4);
 					pstmt.setString(1, "다운완료");
+					pstmt.setInt(2, number);
+					int i = pstmt.executeUpdate();
+					if (i == 1) {
+						System.out.println(number + "번 ott 다운로드가 완료되었습니다.");
+					} else {
+						System.out.println("정보 입력 실패했습니다.");
+					}
+
+				} else {
+					String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
+					pstmt = con.prepareStatement(sql4);
+					pstmt.setString(1, profile.getProfile_name());
+					pstmt.setInt(2, number);
+					pstmt.setString(3, "미시청");
+					pstmt.setString(4, "다운완료");
+					pstmt.setString(5, "미추가");
 					int i = pstmt.executeUpdate();
 					if (i == 1) {
 						System.out.println(number + "번 ott 다운로드가 완료되었습니다.");
@@ -250,20 +262,6 @@ public class OttDAO {
 						System.out.println("정보 입력 실패했습니다.");
 					}
 				}
-			} else {
-				String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
-				pstmt = con.prepareStatement(sql4);
-				pstmt.setString(1, profile.getProfile_name());
-				pstmt.setInt(2, number);
-				pstmt.setString(3, "미시청");
-				pstmt.setString(4, "다운완료");
-				pstmt.setString(5, "미추가");
-				int i = pstmt.executeUpdate();
-				if (i == 1) {
-					System.out.println(number + "번 ott 정보가 입력되었습니다.");
-				} else {
-					System.out.println("정보 입력 실패했습니다.");
-				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -286,13 +284,12 @@ public class OttDAO {
 		}
 	}
 
-	public static void addOtt(int number) {
+	public static void addOtt(int number, ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
-		ProfileVO profile = new ProfileVO();
-		CartVO cart = new CartVO();
+		ArrayList<CartVO> cartList = new ArrayList();
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_ott order by ott_num";
@@ -313,46 +310,37 @@ public class OttDAO {
 				ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
 						ott_year, ott_rate, ott_age, ott_view);
 			}
-			String sq2 = "select * from jav_profile order by profile_num";
-			pstmt = con.prepareStatement(sq2);
-			rs = pstmt.executeQuery();
-			while (rs.next()) {
-				int profile_num = rs.getInt("profile_num");
-				String profile_name = rs.getString("profile_name");
-				String profile_pass = rs.getString("profile_pass");
-				String user_id = rs.getString("user_id");
-				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
-			}
-			String sql3 = "select * from jav_cart order by cart_num";
-			pstmt = con.prepareStatement(sql3);
+			String sql2 = "select * from jav_cart where profile_name = ? order by cart_num";
+			pstmt = con.prepareStatement(sql2);
+			pstmt.setString(1, pro.getProfile_name());
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				int cart_num = rs.getInt("cart_num");
 				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
+				int ott_num = rs.getInt("ott_num");
 				String cart_seen = rs.getString("cart_seen");
 				String cart_down = rs.getString("cart_down");
 				String cart_add = rs.getString("cart_add");
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+				cartList.add(cart);
 			}
-			if (profile.getProfile_name() != null && cart.getProfile_name() != null
-					&& cart.getProfile_name().contains(profile.getProfile_name()) && cart.getOtt_num().equals(number)) {
-				if (cart.getCart_add().equals("찜완료")) {
-					System.out.println("이미 찜한 ott입니다.");
+			if (cartList.stream().anyMatch(
+					s -> s.getProfile_name() != null && s.getOtt_num() == number && s.getCart_add().equals("찜완료"))) {
+				System.out.println("이미 찜한 ott입니다.");
+			} else if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number)) {
+				String sql3 = "update jav_cart set cart_add = ? where ott_num = ?";
+				pstmt = con.prepareStatement(sql3);
+				pstmt.setString(1, "찜완료");
+				pstmt.setInt(2, number);
+				int i = pstmt.executeUpdate();
+				if (i == 1) {
+					System.out.println(number + "번 ott 찜하기가 완료되었습니다.");
 				} else {
-					String sql4 = "update jav_cart set cart_add ?";
-					pstmt = con.prepareStatement(sql4);
-					pstmt.setString(1, "찜완료");
-					int i = pstmt.executeUpdate();
-					if (i == 1) {
-						System.out.println(number + "번 ott 찜하기가 완료되었습니다.");
-					} else {
-						System.out.println("정보 입력 실패했습니다.");
-					}
+					System.out.println("정보 입력 실패했습니다. ");
 				}
 			} else {
-				String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
-				pstmt = con.prepareStatement(sql4);
+				String sql3 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
+				pstmt = con.prepareStatement(sql3);
 				pstmt.setString(1, profile.getProfile_name());
 				pstmt.setInt(2, number);
 				pstmt.setString(3, "미시청");
@@ -360,9 +348,9 @@ public class OttDAO {
 				pstmt.setString(5, "찜완료");
 				int i = pstmt.executeUpdate();
 				if (i == 1) {
-					System.out.println(number + "번 ott 정보가 입력되었습니다.");
+					System.out.println(number + "번 ott 찜하기가 완료되었습니다.");
 				} else {
-					System.out.println("정보 입력 실패했습니다.");
+					System.out.println("정보 입력 실패했습니다. ");
 				}
 			}
 		} catch (IOException e) {
@@ -386,77 +374,78 @@ public class OttDAO {
 		}
 	}
 
-	public static void watchOtt(int number) {
+	public static void watchOtt(int number, ProfileVO pro) throws InterruptedException {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
-		ProfileVO profile = new ProfileVO();
-		CartVO cart = new CartVO();
+		ArrayList<CartVO> cartList = new ArrayList();
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select ott_story from jav_ott where ott_num = ?";
+			String sql = "select u.user_membership from jav_profile p inner join jav_user u where p.user_id = ?";
 			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, pro.getUser_id());
+			rs = pstmt.executeQuery();
+			String user_membership = null;
+			while (rs.next()) {
+				user_membership = rs.getString("user_membership");
+			}
+			if (user_membership.equals("silver")) {
+				System.out.println("[AD]취업률 100% 신화!");
+				Thread.sleep(800);
+				System.out.println("명품 강사진이 먼저일까? 뛰어난 학생들이 먼저일까?");
+				Thread.sleep(800);
+				System.out.println("당신의 100점 인생의 출발, KH352에서 시작하세요!");
+				Thread.sleep(800);
+				System.out.print("곧 광고가 종료됩니다..");
+				Thread.sleep(300);
+				System.out.print("5..");
+				Thread.sleep(300);
+				System.out.print("4..");
+				Thread.sleep(300);
+				System.out.print("3..");
+				Thread.sleep(300);
+				System.out.print("2..");
+				Thread.sleep(300);
+				System.out.print("1..");
+			}
+			String sql2 = "select ott_story from jav_ott where ott_num = ?";
+			pstmt = con.prepareStatement(sql2);
 			pstmt.setInt(1, number);
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				String ott_story = rs.getString("ott_story");
 				System.out.println(ott_story);
 			}
-			sql = "select * from jav_ott order by ott_num";
-			pstmt = con.prepareStatement(sql);
-			rs = pstmt.executeQuery();
-			while (rs.next()) {
-				int ott_num = rs.getInt("ott_num");
-				String ott_title = rs.getString("ott_title");
-				String ott_country = rs.getString("ott_country");
-				String ott_story = rs.getString("ott_story");
-				String ott_genre = rs.getString("ott_genre");
-				String ott_actor = rs.getString("ott_actor");
-				String ott_director = rs.getString("ott_director");
-				String ott_year = rs.getString("ott_year");
-				Double ott_rate = rs.getDouble("ott_rate");
-				String ott_age = rs.getString("ott_age");
-				int ott_view = rs.getInt("ott_view");
-				ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
-						ott_year, ott_rate, ott_age, ott_view);
-			}
-			String sq2 = "select * from jav_profile order by profile_num";
-			pstmt = con.prepareStatement(sq2);
-			rs = pstmt.executeQuery();
-			while (rs.next()) {
-				int profile_num = rs.getInt("profile_num");
-				String profile_name = rs.getString("profile_name");
-				String profile_pass = rs.getString("profile_pass");
-				String user_id = rs.getString("user_id");
-				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
-			}
-			String sql3 = "select * from jav_cart order by cart_num";
+			String sql3 = "select * from jav_cart where profile_name = ? order by cart_num";
 			pstmt = con.prepareStatement(sql3);
+			pstmt.setString(1, pro.getProfile_name());
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				int cart_num = rs.getInt("cart_num");
 				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
+				int ott_num = rs.getInt("ott_num");
 				String cart_seen = rs.getString("cart_seen");
 				String cart_down = rs.getString("cart_down");
 				String cart_add = rs.getString("cart_add");
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+				cartList.add(cart);
 			}
-			if (profile.getProfile_name() != null && cart.getProfile_name() != null
-					&& cart.getProfile_name().contains(profile.getProfile_name()) && cart.getOtt_num().equals(number)) {
-				if (cart.getCart_seen().equals("시청함")) {
-					
+			if (cartList.stream().anyMatch(
+					s -> s.getProfile_name() != null && s.getOtt_num() == number && s.getCart_seen().equals("시청함"))
+					&& profile.getProfile_name() != null) {
+				System.out.println(number + "번 ott 시청완료!");
+			} else if (cartList.stream().anyMatch(
+					s -> s.getProfile_name() != null && s.getOtt_num() == number && !cart.getCart_seen().equals("시청함"))
+					&& profile.getProfile_name() != null) {
+				String sql4 = "update jav_cart set cart_seen = ?";
+				pstmt = con.prepareStatement(sql4);
+				pstmt.setString(1, "시청함");
+				int i = pstmt.executeUpdate();
+				if (i == 1) {
+					System.out.println(number + "번 ott 시청완료!");
 				} else {
-					String sql4 = "update jav_cart set cart_seen ?";
-					pstmt = con.prepareStatement(sql4);
-					pstmt.setString(1, "시청함");
-					int i = pstmt.executeUpdate();
-					if (i == 1) {
-						System.out.println("시청완료!");
-					} else {
-						System.out.println("시청 정보를 업데이트 실패했습니다. ");
-					}
+					System.out.println("시청 정보를 업데이트 실패했습니다. ");
 				}
 			} else {
 				String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
@@ -468,11 +457,15 @@ public class OttDAO {
 				pstmt.setString(5, "미추가");
 				int i = pstmt.executeUpdate();
 				if (i == 1) {
-					System.out.println("시청완료!");
+					System.out.println(number + "번 ott 시청완료!");
 				} else {
 					System.out.println("시청 정보를 업데이트 실패했습니다. ");
 				}
 			}
+			String sql5 = "update jav_ott set ott_view = ott_view + 1 where ott_num = ?";
+			pstmt = con.prepareStatement(sql5);
+			pstmt.setInt(1, number);
+			pstmt.executeUpdate();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -494,28 +487,52 @@ public class OttDAO {
 		}
 	}
 
-	public void ottAddList() {
-		CartVO cart = new CartVO();
+	public boolean ottAddList(ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<CartVO> cartList = new ArrayList();
+		OttVO ott = new OttVO();
+		ArrayList<OttVO> ottList = new ArrayList();
+		boolean flag = false;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select * from jav_cart where cart_add = '찜완료' order by ott_num";
+			String sql = "select count(*) from jav_cart where cart_add = ? and profile_name = ?";
 			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, "찜완료");
+			pstmt.setString(2, pro.getProfile_name());
 			rs = pstmt.executeQuery();
+			int count = -1;
 			while (rs.next()) {
-				int cart_num = rs.getInt("cart_num");
-				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
-				String cart_seen = rs.getString("cart_seen");
-				String cart_down = rs.getString("cart_down");
-				String cart_add = rs.getString("cart_add");
-				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
-				cartList.add(cart);
+				count = rs.getInt("count(*)");
 			}
-			printAddList(cartList);
+			if (count == 0) {
+				flag = true;
+			} else {
+				String sql1 = "select cart_num, profile_name, c.ott_num, ott_title, ott_story, ott_genre,ott_rate,cart_seen, cart_down, cart_add from jav_cart c inner join jav_ott o on c.ott_num = o.ott_num where cart_add = ? and profile_name = ? order by ott_num";
+				pstmt = con.prepareStatement(sql1);
+				pstmt.setString(1, "찜완료");
+				pstmt.setString(2, pro.getProfile_name());
+				rs = pstmt.executeQuery();
+				while (rs.next()) {
+					int cart_num = rs.getInt("cart_num");
+					String profile_name = rs.getString("profile_name");
+					int ott_num = rs.getInt("ott_num");
+					String ott_title = rs.getString("ott_title");
+					String ott_story = rs.getString("ott_story");
+					String ott_genre = rs.getString("ott_genre");
+					Double ott_rate = rs.getDouble("ott_rate");
+					String cart_seen = rs.getString("cart_seen");
+					String cart_down = rs.getString("cart_down");
+					String cart_add = rs.getString("cart_add");
+
+					cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+					cartList.add(cart);
+					ott = new OttVO(ott_title, ott_story, ott_genre, ott_rate);
+					ottList.add(ott);
+				}
+				printAddList(cartList, ottList);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -535,30 +552,41 @@ public class OttDAO {
 				e.printStackTrace();
 			}
 		}
+		return flag;
 	}
 
-	public static void printAddList(ArrayList<CartVO> cartList) {
+	public static void printAddList(ArrayList<CartVO> cartList, ArrayList<OttVO> ottList) {
 		for (int i = 0; i < cartList.size(); i++) {
-			CartVO cart = cartList.get(i);
-			System.out.print(cart.getProfile_name()+ "\t|");
+			cart = cartList.get(i);
+			OttVO ott = ottList.get(i);
+			System.out.print(cart.getProfile_name() + "\t|");
 			System.out.print(cart.getOtt_num() + "\t|");
+			if (ott.getOtt_title().length() < 18) {
+				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
+			} else {
+				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
+			}
+			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			System.out.print(ott.getOtt_genre() + "\t|");
+			System.out.print(ott.getOtt_rate() + "\t|");
 			System.out.print(cart.getCart_seen() + "\t|");
-			System.out.printf("%-8s %1s",cart.getCart_down() ,"\t|");
+			System.out.printf("%-8s %1s", cart.getCart_down(), "\t|");
 			System.out.print(cart.getCart_add() + "|");
 			System.out.println("");
 		}
 	}
 
-	public static void deleteOtt(int number) {
+	public static void deleteOtt(int number, ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "delete from jav_cart where ott_num = ?";
+			String sql = "delete from jav_cart where ott_num = ? and profile_name = ?";
 			pstmt = con.prepareStatement(sql);
 			pstmt.setInt(1, number);
+			pstmt.setString(2, pro.getProfile_name());
 			int i = pstmt.executeUpdate();
 			if (i == 1) {
 				System.out.println(number + "번 ott가 삭제되었습니다.");
@@ -586,28 +614,53 @@ public class OttDAO {
 		}
 	}
 
-	public void ottDownList() {
+	public boolean ottDownList(ProfileVO pro) {
 		CartVO cart = new CartVO();
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<CartVO> cartList = new ArrayList();
+		OttVO ott = new OttVO();
+		ArrayList<OttVO> ottList = new ArrayList();
+		boolean flag = false;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select * from jav_cart where cart_down ='다운완료' order by ott_num";
+			String sql = "select count(*) from jav_cart where cart_down = ? and profile_name = ?";
 			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, "다운완료");
+			pstmt.setString(2, pro.getProfile_name());
 			rs = pstmt.executeQuery();
+			int count = -1;
 			while (rs.next()) {
-				int cart_num = rs.getInt("cart_num");
-				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
-				String cart_seen = rs.getString("cart_seen");
-				String cart_down = rs.getString("cart_down");
-				String cart_add = rs.getString("cart_add");
-				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
-				cartList.add(cart);
+				count = rs.getInt("count(*)");
 			}
-			printAddList(cartList);
+			if (count == 0) {
+				flag = true;
+			} else {
+				String sql1 = "select cart_num, profile_name, c.ott_num, ott_title, ott_story, ott_genre,ott_rate,cart_seen, cart_down, cart_add from jav_cart c inner join jav_ott o on c.ott_num = o.ott_num where cart_down = ? and profile_name = ? order by ott_num";
+				pstmt = con.prepareStatement(sql1);
+				pstmt.setString(1, "다운완료");
+				pstmt.setString(2, pro.getProfile_name());
+				rs = pstmt.executeQuery();
+				while (rs.next()) {
+					int cart_num = rs.getInt("cart_num");
+					String profile_name = rs.getString("profile_name");
+					int ott_num = rs.getInt("ott_num");
+					String ott_title = rs.getString("ott_title");
+					String ott_story = rs.getString("ott_story");
+					String ott_genre = rs.getString("ott_genre");
+					Double ott_rate = rs.getDouble("ott_rate");
+					String cart_seen = rs.getString("cart_seen");
+					String cart_down = rs.getString("cart_down");
+					String cart_add = rs.getString("cart_add");
+
+					cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+					cartList.add(cart);
+					ott = new OttVO(ott_title, ott_story, ott_genre, ott_rate);
+					ottList.add(ott);
+				}
+				printAddList(cartList, ottList);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -627,30 +680,55 @@ public class OttDAO {
 				e.printStackTrace();
 			}
 		}
+		return flag;
 	}
 
-	public void ottWatchList() {
-		CartVO cart = new CartVO();
+	public boolean ottWatchList(ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<CartVO> cartList = new ArrayList();
+		OttVO ott = new OttVO();
+		ArrayList<OttVO> ottList = new ArrayList();
+		boolean flag = false;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select * from jav_cart where cart_seen ='시청함' order by ott_num";
+			String sql = "select count(*) from jav_cart where cart_seen = ? and profile_name = ?";
 			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, "시청함");
+			pstmt.setString(2, pro.getProfile_name());
 			rs = pstmt.executeQuery();
+			int count = -1;
 			while (rs.next()) {
-				int cart_num = rs.getInt("cart_num");
-				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
-				String cart_seen = rs.getString("cart_seen");
-				String cart_down = rs.getString("cart_down");
-				String cart_add = rs.getString("cart_add");
-				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
-				cartList.add(cart);
+				count = rs.getInt("count(*)");
 			}
-			printAddList(cartList);
+			if (count == 0) {
+				flag = true;
+			} else {
+				String sql1 = "select cart_num, profile_name, c.ott_num, ott_title, ott_story, ott_genre,ott_rate,cart_seen, cart_down, cart_add from jav_cart c inner join jav_ott o on c.ott_num = o.ott_num where cart_seen = ? and profile_name = ? order by ott_num";
+				pstmt = con.prepareStatement(sql1);
+				pstmt.setString(1, "시청함");
+				pstmt.setString(2, pro.getProfile_name());
+				rs = pstmt.executeQuery();
+				while (rs.next()) {
+					int cart_num = rs.getInt("cart_num");
+					String profile_name = rs.getString("profile_name");
+					int ott_num = rs.getInt("ott_num");
+					String ott_title = rs.getString("ott_title");
+					String ott_story = rs.getString("ott_story");
+					String ott_genre = rs.getString("ott_genre");
+					Double ott_rate = rs.getDouble("ott_rate");
+					String cart_seen = rs.getString("cart_seen");
+					String cart_down = rs.getString("cart_down");
+					String cart_add = rs.getString("cart_add");
+
+					cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
+					cartList.add(cart);
+					ott = new OttVO(ott_title, ott_story, ott_genre, ott_rate);
+					ottList.add(ott);
+				}
+				printAddList(cartList, ottList);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -670,10 +748,10 @@ public class OttDAO {
 				e.printStackTrace();
 			}
 		}
+		return flag;
 	}
 
 	public static void userList() {
-		CartVO cart = new CartVO();
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -686,14 +764,447 @@ public class OttDAO {
 			while (rs.next()) {
 				int cart_num = rs.getInt("cart_num");
 				String profile_name = rs.getString("profile_name");
-				String ott_num = rs.getString("ott_num");
+				int ott_num = rs.getInt("ott_num");
 				String cart_seen = rs.getString("cart_seen");
 				String cart_down = rs.getString("cart_down");
 				String cart_add = rs.getString("cart_add");
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
 				cartList.add(cart);
 			}
-			printAddList(cartList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void top5List() {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<OttVO> ottList = new ArrayList();
+		int rownum = 0;
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select rownum, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from (select ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from jav_ott order by ott_view desc) where rownum <=5";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, "시청함");
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				rownum = rs.getInt("rownum");
+				String ott_title = rs.getString("ott_title");
+				String ott_country = rs.getString("ott_country");
+				String ott_story = rs.getString("ott_story");
+				String ott_genre = rs.getString("ott_genre");
+				String ott_actor = rs.getString("ott_actor");
+				String ott_director = rs.getString("ott_director");
+				String ott_year = rs.getString("ott_year");
+				Double ott_rate = rs.getDouble("ott_rate");
+				String ott_age = rs.getString("ott_age");
+				int ott_view = rs.getInt("ott_view");
+				OttVO ott = new OttVO(ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year,
+						ott_rate, ott_age, ott_view);
+				ottList.add(ott);
+			}
+			printTop5OttList(ottList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void printTop5OttList(ArrayList<OttVO> ottList) {
+		for (int i = 0; i < ottList.size(); i++) {
+			OttVO ott = ottList.get(i);
+			System.out.printf("%-3d %1s", i + 1, "|");
+			if (ott.getOtt_title().length() < 18) {
+				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
+			} else {
+				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
+			}
+			System.out.print(ott.getOtt_country() + "\t|");
+			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			System.out.print(ott.getOtt_genre() + "\t|");
+			if (ott.getOtt_actor().length() < 10) {
+				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
+			} else {
+				System.out.printf("%-10s %1s", ott.getOtt_actor().substring(0, 8) + "..", "\t|");
+			}
+			if (ott.getOtt_director().length() > 5) {
+				System.out.print(ott.getOtt_director() + "\t|");
+			} else {
+				System.out.print(ott.getOtt_director() + "\t\t|");
+			}
+			System.out.print(ott.getOtt_year() + "\t|");
+			System.out.print(ott.getOtt_rate() + "\t|");
+			System.out.print(ott.getOtt_age() + "|");
+			System.out.println("");
+		}
+	}
+
+	public void categoryList(int choice) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<OttVO> ottList = new ArrayList();
+		int rownum = 0;
+		String genre = null;
+		try {
+			con = DBUtil.makeConnection();
+			if (choice == 1) {
+				genre = "로맨스";
+			} else if (choice == 2) {
+				genre = "드라마";
+			} else if (choice == 3) {
+				genre = "액션";
+			} else if (choice == 4) {
+				genre = "애니메이션";
+			} else if (choice == 5) {
+				genre = "범죄";
+			} else if (choice == 6) {
+				genre = "스릴러";
+			} else if (choice == 7) {
+				genre = "코미디";
+			}
+			String sql = "select * from jav_ott where ott_genre = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, genre);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int ott_num = rs.getInt("ott_num");
+				String ott_title = rs.getString("ott_title");
+				String ott_country = rs.getString("ott_country");
+				String ott_story = rs.getString("ott_story");
+				String ott_genre = rs.getString("ott_genre");
+				String ott_actor = rs.getString("ott_actor");
+				String ott_director = rs.getString("ott_director");
+				String ott_year = rs.getString("ott_year");
+				Double ott_rate = rs.getDouble("ott_rate");
+				String ott_age = rs.getString("ott_age");
+				int ott_view = rs.getInt("ott_view");
+				OttVO ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
+						ott_year, ott_rate, ott_age, ott_view);
+				ottList.add(ott);
+			}
+			printOttList(ottList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void countryList(int choice) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<OttVO> ottList = new ArrayList();
+		int rownum = 0;
+		String genre = null;
+		try {
+			con = DBUtil.makeConnection();
+			if (choice == 1) {
+				genre = "한국";
+			} else if (choice == 2) {
+				genre = "미국";
+			} else if (choice == 3) {
+				genre = "일본";
+			} else if (choice == 4) {
+				genre = "유럽";
+			} else if (choice == 5) {
+				genre = "스페인";
+			}
+			String sql = "select * from jav_ott where ott_country = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, genre);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int ott_num = rs.getInt("ott_num");
+				String ott_title = rs.getString("ott_title");
+				String ott_country = rs.getString("ott_country");
+				String ott_story = rs.getString("ott_story");
+				String ott_genre = rs.getString("ott_genre");
+				String ott_actor = rs.getString("ott_actor");
+				String ott_director = rs.getString("ott_director");
+				String ott_year = rs.getString("ott_year");
+				Double ott_rate = rs.getDouble("ott_rate");
+				String ott_age = rs.getString("ott_age");
+				int ott_view = rs.getInt("ott_view");
+				OttVO ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
+						ott_year, ott_rate, ott_age, ott_view);
+				ottList.add(ott);
+			}
+			printOttList(ottList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void getOttList() {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<OttVO> ottList = new ArrayList();
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select * from jav_ott order by ott_num";
+			pstmt = con.prepareStatement(sql);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int ott_num = rs.getInt("ott_num");
+				String ott_title = rs.getString("ott_title");
+				String ott_country = rs.getString("ott_country");
+				String ott_story = rs.getString("ott_story");
+				String ott_genre = rs.getString("ott_genre");
+				String ott_actor = rs.getString("ott_actor");
+				String ott_director = rs.getString("ott_director");
+				String ott_year = rs.getString("ott_year");
+				Double ott_rate = rs.getDouble("ott_rate");
+				String ott_age = rs.getString("ott_age");
+				int ott_view = rs.getInt("ott_view");
+				OttVO ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
+						ott_year, ott_rate, ott_age, ott_view);
+				ottList.add(ott);
+			}
+			printOttTotalList(ottList);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void printOttTotalList(ArrayList<OttVO> ottList) {
+		for (int i = 0; i < ottList.size(); i++) {
+			OttVO ott = ottList.get(i);
+			System.out.printf("%-3d %1s", ott.getOtt_num(), "|");
+			if (ott.getOtt_title().length() < 18) {
+				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
+			} else {
+				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
+			}
+			System.out.print(ott.getOtt_country() + "\t|");
+			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			System.out.print(ott.getOtt_genre() + "\t|");
+			if (ott.getOtt_actor().length() < 10) {
+				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
+			} else {
+				System.out.printf("%-10s %1s", ott.getOtt_actor().substring(0, 8) + "..", "\t|");
+			}
+			if (ott.getOtt_director().length() > 5) {
+				System.out.print(ott.getOtt_director() + "\t|");
+			} else {
+				System.out.print(ott.getOtt_director() + "\t\t|");
+			}
+			System.out.print(ott.getOtt_year() + "\t|");
+			System.out.print(ott.getOtt_rate() + "\t|");
+			System.out.print(ott.getOtt_age() + "\t|");
+			System.out.print(ott.getOtt_view() + "\t|");
+			System.out.println("");
+		}
+	}
+
+	public void updateOtt(OttVO ott, int num) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "update jav_user set ott_name = ?, ott_title = ?, ott_country = ?, ott_ story = ?, ott_genre = ?, ott_actor = ?, ott_director = ?, ott_year = ?, ott_rate = ?, ott_age = ? where ott_num = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, ott.getOtt_title());
+			pstmt.setString(2, ott.getOtt_country());
+			pstmt.setString(3, ott.getOtt_story());
+			pstmt.setString(4, ott.getOtt_genre());
+			pstmt.setString(5, ott.getOtt_actor());
+			pstmt.setString(6, ott.getOtt_director());
+			pstmt.setString(7, ott.getOtt_year());
+			pstmt.setDouble(8, ott.getOtt_rate());
+			pstmt.setString(9, ott.getOtt_age());
+			pstmt.setInt(10, ott.getOtt_num());
+			int i = pstmt.executeUpdate();
+			if (i == 1) {
+				System.out.println(ott.getOtt_num() + "번 ott 변경 완료!");
+			} else {
+				System.out.println("정보 업데이트 실패했습니다. ");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void createOtt(OttVO ott) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "inser into jav_user valuse (ott_sep.nextval,?,?,?,?,?,?,?,?,?,0) ";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, ott.getOtt_title());
+			pstmt.setString(2, ott.getOtt_country());
+			pstmt.setString(3, ott.getOtt_story());
+			pstmt.setString(4, ott.getOtt_genre());
+			pstmt.setString(5, ott.getOtt_actor());
+			pstmt.setString(6, ott.getOtt_director());
+			pstmt.setString(7, ott.getOtt_year());
+			pstmt.setDouble(8, ott.getOtt_rate());
+			pstmt.setString(9, ott.getOtt_age());
+			pstmt.setInt(10, ott.getOtt_view());
+			int i = pstmt.executeUpdate();
+			if (i == 1) {
+				System.out.println(ott.getOtt_num() + "번 ott 생성 완료!");
+			} else {
+				System.out.println("정보 업데이트 실패했습니다. ");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void ottDelete() {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		ArrayList<OttVO> ottList = new ArrayList();
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select * from jav_ott order by ott_num";
+			pstmt = con.prepareStatement(sql);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int ott_num = rs.getInt("ott_num");
+				String ott_title = rs.getString("ott_title");
+				String ott_country = rs.getString("ott_country");
+				String ott_story = rs.getString("ott_story");
+				String ott_genre = rs.getString("ott_genre");
+				String ott_actor = rs.getString("ott_actor");
+				String ott_director = rs.getString("ott_director");
+				String ott_year = rs.getString("ott_year");
+				Double ott_rate = rs.getDouble("ott_rate");
+				String ott_age = rs.getString("ott_age");
+				int ott_view = rs.getInt("ott_view");
+				OttVO ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
+						ott_year, ott_rate, ott_age, ott_view);
+				ottList.add(ott);
+			}
+			printOttTotalList(ottList);
+			System.out.print("삭제할 ott 번호를 입력하세요: ");
+			int number = Integer.parseInt(sc.nextLine());
+			sql = "delete from jav_ott where ott_num = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setInt(1, number);
+			int i = pstmt.executeUpdate();
+			if (i == 1) {
+				System.out.println("삭제되었습니다.");
+			} else {
+				System.out.println("삭제 실패했습니다.");
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
