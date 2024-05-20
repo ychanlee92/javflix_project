@@ -8,7 +8,7 @@ public class MenuViewer {
 		System.out.println("3. 카테고리별 검색 4. 국가별 검색");
 		System.out.println("5. 내가 찜한 목록 6. 다운로드 목록");
 		System.out.println("7. 시청목록 8. 계정 관리");
-		System.out.print("9. 로그아웃  ");
+		System.out.print("9. 멤버쉽 결제 10. 뒤로가기  ");
 	}
 	//유저 메뉴
 	public static void accountMenuView() {
@@ -64,5 +64,9 @@ public class MenuViewer {
 	public static void ottManage() {
 		System.out.println("메뉴를 선택하세요.");
 		System.out.print("1. ott 조회 2. ott 수정 3. ott 추가 4. ott 삭제 5. 뒤로가기  ");
+	}
+	public static void membershipMenuViewer() {
+		System.out.println("메뉴를 선택하세요."); 
+		System.out.print("1. 멤버쉽 결제 2. 뒤로가기  ");
 	}
 }

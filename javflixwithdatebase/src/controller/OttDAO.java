@@ -221,7 +221,7 @@ public class OttDAO {
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
 				cartList.add(cart);
 			}
-			String sql3 = "select u.user_membership from jav_profile p inner join jav_user u where p.user_id = ?";
+			String sql3 = "select u.user_membership from jav_profile p inner join jav_user u on p.user_id = u.user_id where p.user_id = ?";
 			pstmt = con.prepareStatement(sql3);
 			pstmt.setString(1, pro.getUser_id());
 			rs = pstmt.executeQuery();
@@ -232,10 +232,11 @@ public class OttDAO {
 			if (!user_membership.equals("premium")) {
 				System.out.println("오프라인 저장 기능은 premium등급부터 이용가능합니다. ");
 			} else {
-				if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number
-						&& s.getCart_down().equals("다운완료"))) {
+				if (cartList.stream().anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name())
+						&& s.getOtt_num() == number && s.getCart_down().equals("다운완료"))) {
 					System.out.println("이미 다운받은 ott입니다.");
-				} else if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number)) {
+				} else if (cartList.stream()
+						.anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name()) && s.getOtt_num() == number)) {
 					String sql4 = "update jav_cart set cart_down = ? where ott_num = ?";
 					pstmt = con.prepareStatement(sql4);
 					pstmt.setString(1, "다운완료");
@@ -250,7 +251,7 @@ public class OttDAO {
 				} else {
 					String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
 					pstmt = con.prepareStatement(sql4);
-					pstmt.setString(1, profile.getProfile_name());
+					pstmt.setString(1, pro.getProfile_name());
 					pstmt.setInt(2, number);
 					pstmt.setString(3, "미시청");
 					pstmt.setString(4, "다운완료");
@@ -324,10 +325,11 @@ public class OttDAO {
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
 				cartList.add(cart);
 			}
-			if (cartList.stream().anyMatch(
-					s -> s.getProfile_name() != null && s.getOtt_num() == number && s.getCart_add().equals("찜완료"))) {
+			if (cartList.stream().anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name())
+					&& s.getOtt_num() == number && s.getCart_add().equals("찜완료"))) {
 				System.out.println("이미 찜한 ott입니다.");
-			} else if (cartList.stream().anyMatch(s -> s.getProfile_name() != null && s.getOtt_num() == number)) {
+			} else if (cartList.stream()
+					.anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name()) && s.getOtt_num() == number)) {
 				String sql3 = "update jav_cart set cart_add = ? where ott_num = ?";
 				pstmt = con.prepareStatement(sql3);
 				pstmt.setString(1, "찜완료");
@@ -341,7 +343,7 @@ public class OttDAO {
 			} else {
 				String sql3 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
 				pstmt = con.prepareStatement(sql3);
-				pstmt.setString(1, profile.getProfile_name());
+				pstmt.setString(1, pro.getProfile_name());
 				pstmt.setInt(2, number);
 				pstmt.setString(3, "미시청");
 				pstmt.setString(4, "미다운로드");
@@ -382,7 +384,7 @@ public class OttDAO {
 		ArrayList<CartVO> cartList = new ArrayList();
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select u.user_membership from jav_profile p inner join jav_user u where p.user_id = ?";
+			String sql = "select u.user_membership from jav_profile p inner join jav_user u on p.user_id = u.user_id where p.user_id = ?";
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, pro.getUser_id());
 			rs = pstmt.executeQuery();
@@ -407,7 +409,7 @@ public class OttDAO {
 				Thread.sleep(300);
 				System.out.print("2..");
 				Thread.sleep(300);
-				System.out.print("1..");
+				System.out.print("1..\n");
 			}
 			String sql2 = "select ott_story from jav_ott where ott_num = ?";
 			pstmt = con.prepareStatement(sql2);
@@ -431,13 +433,11 @@ public class OttDAO {
 				cart = new CartVO(cart_num, profile_name, ott_num, cart_seen, cart_down, cart_add);
 				cartList.add(cart);
 			}
-			if (cartList.stream().anyMatch(
-					s -> s.getProfile_name() != null && s.getOtt_num() == number && s.getCart_seen().equals("시청함"))
-					&& profile.getProfile_name() != null) {
+			if (cartList.stream().anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name())
+					&& s.getOtt_num() == number && s.getCart_seen().equals("시청함"))) {
 				System.out.println(number + "번 ott 시청완료!");
-			} else if (cartList.stream().anyMatch(
-					s -> s.getProfile_name() != null && s.getOtt_num() == number && !cart.getCart_seen().equals("시청함"))
-					&& profile.getProfile_name() != null) {
+			} else if (cartList.stream().anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name())
+					&& s.getOtt_num() == number && !cart.getCart_seen().equals("시청함"))) {
 				String sql4 = "update jav_cart set cart_seen = ?";
 				pstmt = con.prepareStatement(sql4);
 				pstmt.setString(1, "시청함");
@@ -450,7 +450,7 @@ public class OttDAO {
 			} else {
 				String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
 				pstmt = con.prepareStatement(sql4);
-				pstmt.setString(1, profile.getProfile_name());
+				pstmt.setString(1, pro.getProfile_name());
 				pstmt.setInt(2, number);
 				pstmt.setString(3, "시청함");
 				pstmt.setString(4, "미다운로드");
@@ -800,12 +800,12 @@ public class OttDAO {
 		int rownum = 0;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "select rownum, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from (select ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from jav_ott order by ott_view desc) where rownum <=5";
+			String sql = "select rownum, ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from (select ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year, ott_rate, ott_age, ott_view from jav_ott order by ott_view desc) where rownum <=5";
 			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, "시청함");
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				rownum = rs.getInt("rownum");
+				int ott_num = rs.getInt("ott_num");
 				String ott_title = rs.getString("ott_title");
 				String ott_country = rs.getString("ott_country");
 				String ott_story = rs.getString("ott_story");
@@ -816,7 +816,7 @@ public class OttDAO {
 				Double ott_rate = rs.getDouble("ott_rate");
 				String ott_age = rs.getString("ott_age");
 				int ott_view = rs.getInt("ott_view");
-				OttVO ott = new OttVO(ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year,
+				OttVO ott = new OttVO(ott_num,ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year,
 						ott_rate, ott_age, ott_view);
 				ottList.add(ott);
 			}
@@ -846,6 +846,7 @@ public class OttDAO {
 		for (int i = 0; i < ottList.size(); i++) {
 			OttVO ott = ottList.get(i);
 			System.out.printf("%-3d %1s", i + 1, "|");
+			System.out.printf("%-3d %1s", ott.getOtt_num(), "|");
 			if (ott.getOtt_title().length() < 18) {
 				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
 			} else {

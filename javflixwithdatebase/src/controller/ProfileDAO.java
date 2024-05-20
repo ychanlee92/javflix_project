@@ -97,29 +97,70 @@ public class ProfileDAO {
 		return profile;
 	}
 
-	public ProfileVO profileLogin(ProfileVO profile) {
+	public ProfileVO profileLogin(ProfileVO profile, UserVO user) {
 		ArrayList<ProfileVO> profileList = new ArrayList();
-		profileList.add(profile);
-		List<String> list = profileList.stream().map(s -> s.getProfile_name()).collect(Collectors.toList());
-		if (list.getFirst().equals(list.getLast())) {
+		ArrayList<UserVO> userList = new ArrayList();
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		boolean flag = false;
 
-		} else {
-			for (;;) {
-				System.out.print("프로필을 선택하세요: ");
-				for (int i = 0; i < profileList.size(); i++) {
-					profile = profileList.get(i);
-					System.out.print((i + 1) + ". " + profile.getProfile_name() + " ");
-				}
-				profile = profileList.get(Integer.parseInt(sc.nextLine()));
-				if (profile.getProfile_pass() != null) {
-					System.out.print("비밀번호를 입력하세요: ");
-					if (profile.getProfile_pass().equals(sc.nextLine())) {
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select profile_num,profile_name, profile_pass,P.user_id from jav_profile p inner join jav_user u on p.user_id = u.user_id where u.user_id = ? ";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, user.getUser_id());
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int profile_num = rs.getInt("profile_num");
+				String profile_name = rs.getString("profile_name");
+				String profile_pass = rs.getString("profile_pass");
+				String user_id = rs.getString("user_id");
+				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
+				profileList.add(profile);
+			}
+			List<String> list = profileList.stream().map(s -> s.getProfile_name()).collect(Collectors.toList());
+			if (list.getFirst().equals(list.getLast())) {
+
+			} else {
+				for (;;) {
+					System.out.print("프로필을 선택하세요: ");
+					for (int i = 0; i < profileList.size(); i++) {
+						profile = profileList.get(i);
+						System.out.print((i + 1) + ". " + profile.getProfile_name() + " ");
+					}
+					profile = profileList.get(Integer.parseInt(sc.nextLine())-1);
+					if (profile.getProfile_pass() != null) {
+						System.out.print("비밀번호를 입력하세요: ");
+						if (profile.getProfile_pass().equals(sc.nextLine())) {
+							System.out.println("현재 프로필: " + profile.getProfile_name());
+							break;
+						} else {
+							System.out.println("로그인 정보가 맞지 않습니다. ");
+						}
+					} else {
 						System.out.println("현재 프로필: " + profile.getProfile_name());
 						break;
-					} else {
-						System.out.println("로그인 정보가 맞지 않습니다. ");
 					}
 				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
 		}
 		return profile;
@@ -157,7 +198,7 @@ public class ProfileDAO {
 						profile = profileList.get(i);
 						System.out.print((i + 1) + ". " + profile.getProfile_name() + " ");
 					}
-					profile = profileList.get(Integer.parseInt(sc.nextLine())-1);
+					profile = profileList.get(Integer.parseInt(sc.nextLine()) - 1);
 					if (profile.getProfile_pass() != null) {
 						System.out.print("비밀번호를 입력하세요: ");
 						if (profile.getProfile_pass().equals(sc.nextLine())) {

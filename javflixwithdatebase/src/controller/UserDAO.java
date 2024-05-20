@@ -400,4 +400,42 @@ public class UserDAO {
 		}
 	}
 
+	public String membershipCheck(ProfileVO pro) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		UserVO user = new UserVO();
+		boolean flag = false;
+		String user_membership = null;
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select u.user_membership from jav_profile p inner join jav_user u on p.user_id = u.user_id where p.profile_name = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, pro.getProfile_name());
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				user_membership = rs.getString("user_membership");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return user_membership;
+	}
+
 }

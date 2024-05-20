@@ -13,9 +13,9 @@ public class ProfileManager {
 		return profile;
 	}
 
-	public static ProfileVO profileLogin(ProfileVO profile) {
+	public static ProfileVO profileLogin(ProfileVO profile, UserVO user) {
 		ProfileDAO pd = new ProfileDAO();
-		ProfileVO profileo = pd.profileLogin(profile);
+		ProfileVO profileo = pd.profileLogin(profile,user);
 		return profileo;
 	}
 

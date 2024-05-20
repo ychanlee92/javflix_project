@@ -14,6 +14,7 @@ import view.ADDLIST_CHOICE;
 import view.ADMINMENU_CHOICE;
 import view.DOWNLIST_CHOICE;
 import view.LOGIN_CHOICE;
+import view.MEMBERSHIP_CHOICE;
 import view.MENU_CHOICE;
 import view.MenuViewer;
 import view.OTTMANAGE_CHOICE;
@@ -148,7 +149,7 @@ public class JavflixMain {
 		} else {
 			System.out.println("로그인 성공!");
 			ProfileVO profile = ProfileManager.profileCheck(user);
-			ProfileVO pro = ProfileManager.profileLogin(profile);
+			ProfileVO pro = ProfileManager.profileLogin(profile,user);
 			while (!flag) {
 				MenuViewer.mainMenuView();
 				choiceNum = Integer.parseInt(sc.nextLine());
@@ -178,6 +179,9 @@ public class JavflixMain {
 				case MENU_CHOICE.ACCOUNT:
 					accountMenu(pro);
 					break;
+				case MENU_CHOICE.MEMBERSHIP:
+					membershipMenu(pro);
+					break;
 				case MENU_CHOICE.LOGOUT:
 					flag = true;
 					break;
@@ -186,6 +190,24 @@ public class JavflixMain {
 					break;
 				}
 			}
+		}
+	}
+
+	public static void membershipMenu(ProfileVO pro) {
+		int choice = 0;
+		UserManager userManager = new UserManager();
+		String membership = userManager.userMembership(pro);
+		MenuViewer.membershipMenuViewer();
+		choice = Integer.parseInt(sc.nextLine());
+		switch (choice) {
+		case MEMBERSHIP_CHOICE.BUY:
+			userManager.membershipChoose(membership);
+			break;
+		case MEMBERSHIP_CHOICE.BACK:
+			return;
+		default:
+			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			break;
 		}
 	}
 
