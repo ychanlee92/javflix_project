@@ -77,8 +77,12 @@ public class OttDAO {
 				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
 			}
 			System.out.print(ott.getOtt_country() + "\t|");
-			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
-			System.out.print(ott.getOtt_genre() + "\t|");
+			if(ott.getOtt_story().length()>25) {
+				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");				
+			} else {
+				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");	
+			}
+			System.out.print(ott.getOtt_genre() + "\t|");				
 			if (ott.getOtt_actor().length() < 10) {
 				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
 			} else {
@@ -168,6 +172,8 @@ public class OttDAO {
 			break;
 		case OPTION_CHOICE.DOWN:
 			downOtt(number, pro);
+			break;
+		case OPTION_CHOICE.BACK:
 			return;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
@@ -1127,9 +1133,10 @@ public class OttDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		int view = 0;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "inser into jav_user valuse (ott_sep.nextval,?,?,?,?,?,?,?,?,?,0) ";
+			String sql = "insert into jav_ott values (ott_sep.nextval,?,?,?,?,?,?,?,?,?,?) ";
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, ott.getOtt_title());
 			pstmt.setString(2, ott.getOtt_country());
@@ -1140,10 +1147,10 @@ public class OttDAO {
 			pstmt.setString(7, ott.getOtt_year());
 			pstmt.setDouble(8, ott.getOtt_rate());
 			pstmt.setString(9, ott.getOtt_age());
-			pstmt.setInt(10, ott.getOtt_view());
+			pstmt.setInt(10, view);
 			int i = pstmt.executeUpdate();
 			if (i == 1) {
-				System.out.println(ott.getOtt_num() + "번 ott 생성 완료!");
+				System.out.println("ott 생성 완료!");
 			} else {
 				System.out.println("정보 업데이트 실패했습니다. ");
 			}

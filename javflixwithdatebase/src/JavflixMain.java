@@ -39,21 +39,22 @@ public class JavflixMain {
 		System.out.println("");
 		System.out.println("★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆");
 
+		// 메인 메뉴
 		int num;
 		while (true) {
 			MenuViewer.loginMenu();
 			num = Integer.parseInt(sc.nextLine());
 			switch (num) {
-			case LOGIN_CHOICE.USER:
+			case LOGIN_CHOICE.USER: // 유저 로그인
 				userLogin();
 				break;
-			case LOGIN_CHOICE.ADMIN:
+			case LOGIN_CHOICE.ADMIN: // 관리자 로그인
 				adminLogin();
 				break;
-			case LOGIN_CHOICE.SIGNUP:
+			case LOGIN_CHOICE.SIGNUP: // 회원가입
 				UserManager.signUp();
 				break;
-			case LOGIN_CHOICE.END:
+			case LOGIN_CHOICE.END: // 사용종료
 				System.out.println("종료되었습니다.");
 				return;
 			default:
@@ -63,83 +64,7 @@ public class JavflixMain {
 		}
 	}
 
-	public static void adminLogin() {
-		int choiceNum;
-		try {
-			DBUtil.loginConnection();
-			while (true) {
-				MenuViewer.adminMenuView();
-				choiceNum = Integer.parseInt(sc.nextLine());
-				switch (choiceNum) {
-				case ADMINMENU_CHOICE.USER:
-					MenuViewer.userManage();
-					userManageMenu();
-					break;
-				case ADMINMENU_CHOICE.OTT:
-					MenuViewer.ottManage();
-					ottManageMenu();
-					break;
-				case ADMINMENU_CHOICE.BACK:
-					return;
-				default:
-					System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-					break;
-				}
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static void ottManageMenu() {
-		int choiceNum;
-		OttManager ottManager = new OttManager();
-		choiceNum = Integer.parseInt(sc.nextLine());
-		switch (choiceNum) {
-		case OTTMANAGE_CHOICE.OTTSEARCH:
-			ottManager.ottSearch();
-			break;
-		case OTTMANAGE_CHOICE.OTTUPDATE:
-			ottManager.ottUpdate();
-			break;
-		case OTTMANAGE_CHOICE.OTTCREATE:
-			ottManager.ottCreate();
-			break;
-		case OTTMANAGE_CHOICE.OTTDELETE:
-			ottManager.ottDelete();
-			break;
-		case OTTMANAGE_CHOICE.BACK:
-			break;
-		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-			break;
-		}
-	}
-
-	public static void userManageMenu() {
-		int choiceNum;
-		UserManager userManager = new UserManager();
-		choiceNum = Integer.parseInt(sc.nextLine());
-		switch (choiceNum) {
-		case USERMANAGER_CHOICE.USERSEARCH:
-			userManager.userSearch();
-			break;
-		case USERMANAGER_CHOICE.USERUPDATE:
-			userManager.userUpdate();
-			break;
-		case USERMANAGER_CHOICE.USERDELETE:
-			userManager.userDelete();
-			break;
-		case USERMANAGER_CHOICE.BACK:
-			break;
-		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-			break;
-		}
-	}
-
+	// 유저 로그인
 	public static void userLogin() throws InterruptedException {
 		int choiceNum;
 		boolean flag = false;
@@ -149,40 +74,43 @@ public class JavflixMain {
 		} else {
 			System.out.println("로그인 성공!");
 			ProfileVO profile = ProfileManager.profileCheck(user);
-			ProfileVO pro = ProfileManager.profileLogin(profile,user);
+			ProfileVO pro = ProfileManager.profileLogin(profile, user);
 			while (!flag) {
 				MenuViewer.mainMenuView();
 				choiceNum = Integer.parseInt(sc.nextLine());
-
 				switch (choiceNum) {
-				case MENU_CHOICE.SEARCH:
+
+				case MENU_CHOICE.SEARCH: // 검색
 					searchMenu(pro);
 					break;
-				case MENU_CHOICE.TOP5:
+				case MENU_CHOICE.TOP5: // 조회수 top5
 					top5Menu(pro);
 					break;
-				case MENU_CHOICE.CATEGORY:
+				case MENU_CHOICE.CATEGORY: // 카테고리별 검색
 					categoryMenu(pro);
 					break;
-				case MENU_CHOICE.COUNTRY:
+				case MENU_CHOICE.COUNTRY: // 국가별 검색
 					countryMenu(pro);
 					break;
-				case MENU_CHOICE.ADDLIST:
+				case MENU_CHOICE.ADDLIST: // 찜 목록
 					addListMenu(pro);
 					break;
-				case MENU_CHOICE.DOWNLIST:
+				case MENU_CHOICE.DOWNLIST: // 다운로드 목록
 					downListMenu(pro);
 					break;
-				case MENU_CHOICE.WATCHLIST:
+				case MENU_CHOICE.WATCHLIST: // 시청 목록
 					watchListMenu(pro);
 					break;
-				case MENU_CHOICE.ACCOUNT:
+				case MENU_CHOICE.ACCOUNT: // 계정 관리
 					accountMenu(pro);
 					break;
-				case MENU_CHOICE.MEMBERSHIP:
+				case MENU_CHOICE.MEMBERSHIP: // 멤버쉽
 					membershipMenu(pro);
 					break;
-				case MENU_CHOICE.LOGOUT:
+				case MENU_CHOICE.USER: // 유저 정보 조회
+					userMenu(pro);
+					break;
+				case MENU_CHOICE.LOGOUT: // 로그아웃
 					flag = true;
 					break;
 				default:
@@ -192,18 +120,22 @@ public class JavflixMain {
 			}
 		}
 	}
-
-	public static void membershipMenu(ProfileVO pro) {
+	
+	// 검색 메뉴
+	public static void searchMenu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
-		UserManager userManager = new UserManager();
-		String membership = userManager.userMembership(pro);
-		MenuViewer.membershipMenuViewer();
+		OttManager ottManager = new OttManager();
+		MenuViewer.ottMenuView();
 		choice = Integer.parseInt(sc.nextLine());
+
 		switch (choice) {
-		case MEMBERSHIP_CHOICE.BUY:
-			userManager.membershipChoose(membership);
+		case OTT_CHOICE.CHOOSE:
+			ottManager.ottList(pro);
 			break;
-		case MEMBERSHIP_CHOICE.BACK:
+		case OTT_CHOICE.SEARCH:
+			ottManager.searchOttList(pro);
+			break;
+		case OTT_CHOICE.BACK:
 			return;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
@@ -211,102 +143,99 @@ public class JavflixMain {
 		}
 	}
 
-	public static ProfileVO accountMenu(ProfileVO pro) {
+	// top5 메뉴
+	public static void top5Menu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
-		ProfileManager profileManager = new ProfileManager();
-		UserManager userManager = new UserManager();
-		MenuViewer.accountMenuView();
+		int number = 0;
+		OttManager ottManager = new OttManager();
+		OttManager.top5List();
+		MenuViewer.top5MenuView();
 		choice = Integer.parseInt(sc.nextLine());
-		ProfileVO profile = new ProfileVO();
+
 		switch (choice) {
-		case ACCOUNT_CHOICE.NAMECHANGE:
-			profileManager.nameChange(pro);
+		case TOP5_CHOICE.WATCH:
+			number = OttDAO.numberOption();
+			OttDAO.watchOtt(number, pro);
 			break;
-		case ACCOUNT_CHOICE.PASSCHANGE:
-			profileManager.passChange(pro);
+		case TOP5_CHOICE.ADD:
+			number = OttDAO.numberOption();
+			OttDAO.addOtt(number, pro);
 			break;
-		case ACCOUNT_CHOICE.NEWPROFILE:
-			profileManager.passCreate(pro);
-			break;
-		case ACCOUNT_CHOICE.PROFILECHANGE:
-			profile = profileManager.proChange(pro);
-			break;
-		case ACCOUNT_CHOICE.ACCOUNTPASS:
-			userManager.accountPass(pro);
-			break;
-		case ACCOUNT_CHOICE.BACK:
-			break;
+		case TOP5_CHOICE.DOWN:
+			number = OttDAO.numberOption();
+			OttDAO.downOtt(number, pro);
+			return;
+		case TOP5_CHOICE.BACK:
+			return;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
 			break;
 		}
-		return profile;
 	}
 
-	public static void watchListMenu(ProfileVO pro) throws InterruptedException {
+	// 카테고리 메뉴
+	public static void categoryMenu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
-		int number = 0;
 		OttManager ottManager = new OttManager();
-		boolean flag = ottManager.watchList(pro);
-		if (flag == true) {
-			System.out.println("장바구니가 비었습니다.");
-		} else {
-			MenuViewer.watchListMenuViewer();
-			choice = Integer.parseInt(sc.nextLine());
-			switch (choice) {
-			case WATCHLIST_CHOICE.WATCH:
-				number = OttDAO.numberOption();
-				OttDAO.watchOtt(number, pro);
-				break;
-			case WATCHLIST_CHOICE.ADD:
-				number = OttDAO.numberOption();
-				OttDAO.addOtt(number, pro);
-				break;
-			case WATCHLIST_CHOICE.DOWN:
-				number = OttDAO.numberOption();
-				OttDAO.downOtt(number, pro);
-				break;
-			case WATCHLIST_CHOICE.BACK:
-				return;
-			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-				break;
-			}
+		MenuViewer.categoryMenuView();
+		choice = Integer.parseInt(sc.nextLine());
+		OttManager.categoryList(choice);
+		MenuViewer.watchListMenuViewer();
+		int number = 0;
+		number = Integer.parseInt(sc.nextLine());
+		switch (number) {
+		case TOP5_CHOICE.WATCH:
+			number = OttDAO.numberOption();
+			OttDAO.watchOtt(number, pro);
+			break;
+		case TOP5_CHOICE.ADD:
+			number = OttDAO.numberOption();
+			OttDAO.addOtt(number, pro);
+			break;
+		case TOP5_CHOICE.DOWN:
+			number = OttDAO.numberOption();
+			OttDAO.downOtt(number, pro);
+			return;
+		case TOP5_CHOICE.BACK:
+			return;
+		default:
+			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			break;
 		}
 	}
 
-	public static void downListMenu(ProfileVO pro) throws InterruptedException {
+	// 국가별 메뉴
+	public static void countryMenu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
-		int number = 0;
 		OttManager ottManager = new OttManager();
-		boolean flag = ottManager.downList(pro);
-		if (flag == true) {
-			System.out.println("장바구니가 비었습니다.");
-		} else {
-			MenuViewer.downListMenuViewer();
-			choice = Integer.parseInt(sc.nextLine());
-			switch (choice) {
-			case DOWNLIST_CHOICE.WATCH:
-				number = OttDAO.numberOption();
-				OttDAO.watchOtt(number, pro);
-				break;
-			case DOWNLIST_CHOICE.ADD:
-				number = OttDAO.numberOption();
-				OttDAO.addOtt(number, pro);
-				break;
-			case DOWNLIST_CHOICE.DELETE:
-				number = OttDAO.numberOption();
-				OttDAO.deleteOtt(number, pro);
-				break;
-			case DOWNLIST_CHOICE.BACK:
-				return;
-			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-				break;
-			}
+		MenuViewer.countryMenuView();
+		choice = Integer.parseInt(sc.nextLine());
+		OttManager.countryList(choice);
+		MenuViewer.watchListMenuViewer();
+		int number = 0;
+		number = Integer.parseInt(sc.nextLine());
+		switch (number) {
+		case TOP5_CHOICE.WATCH:
+			number = OttDAO.numberOption();
+			OttDAO.watchOtt(number, pro);
+			break;
+		case TOP5_CHOICE.ADD:
+			number = OttDAO.numberOption();
+			OttDAO.addOtt(number, pro);
+			break;
+		case TOP5_CHOICE.DOWN:
+			number = OttDAO.numberOption();
+			OttDAO.downOtt(number, pro);
+			return;
+		case TOP5_CHOICE.BACK:
+			return;
+		default:
+			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			break;
 		}
 	}
 
+	// 찜 목록 메뉴
 	public static void addListMenu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
 		int number = 0;
@@ -339,28 +268,170 @@ public class JavflixMain {
 		}
 	}
 
-	public static void top5Menu(ProfileVO pro) throws InterruptedException {
+	// 다운로드 목록 메뉴
+	public static void downListMenu(ProfileVO pro) throws InterruptedException {
 		int choice = 0;
 		int number = 0;
 		OttManager ottManager = new OttManager();
-		OttManager.top5List();
-		MenuViewer.top5MenuView();
-		choice = Integer.parseInt(sc.nextLine());
+		boolean flag = ottManager.downList(pro);
+		if (flag == true) {
+			System.out.println("장바구니가 비었습니다.");
+		} else {
+			MenuViewer.downListMenuViewer();
+			choice = Integer.parseInt(sc.nextLine());
+			switch (choice) {
+			case DOWNLIST_CHOICE.WATCH:
+				number = OttDAO.numberOption();
+				OttDAO.watchOtt(number, pro);
+				break;
+			case DOWNLIST_CHOICE.ADD:
+				number = OttDAO.numberOption();
+				OttDAO.addOtt(number, pro);
+				break;
+			case DOWNLIST_CHOICE.DELETE:
+				number = OttDAO.numberOption();
+				OttDAO.deleteOtt(number, pro);
+				break;
+			case DOWNLIST_CHOICE.BACK:
+				return;
+			default:
+				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				break;
+			}
+		}
+	}
 
+	// 시청 목록 메뉴
+	public static void watchListMenu(ProfileVO pro) throws InterruptedException {
+		int choice = 0;
+		int number = 0;
+		OttManager ottManager = new OttManager();
+		boolean flag = ottManager.watchList(pro);
+		if (flag == true) {
+			System.out.println("장바구니가 비었습니다.");
+		} else {
+			MenuViewer.watchListMenuViewer();
+			choice = Integer.parseInt(sc.nextLine());
+			switch (choice) {
+			case WATCHLIST_CHOICE.WATCH:
+				number = OttDAO.numberOption();
+				OttDAO.watchOtt(number, pro);
+				break;
+			case WATCHLIST_CHOICE.ADD:
+				number = OttDAO.numberOption();
+				OttDAO.addOtt(number, pro);
+				break;
+			case WATCHLIST_CHOICE.DOWN:
+				number = OttDAO.numberOption();
+				OttDAO.downOtt(number, pro);
+				break;
+			case WATCHLIST_CHOICE.BACK:
+				return;
+			default:
+				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				break;
+			}
+		}
+	}
+	
+	//유저 정보 조회
+	public static void userMenu(ProfileVO pro) {
+		UserManager userManager = new UserManager();
+		userManager.userPrint(pro);
+	}
+
+	// 관리자 로그인
+	public static void adminLogin() {
+		int choiceNum;
+		try {
+			DBUtil.loginConnection();
+			while (true) {
+				MenuViewer.adminMenuView();
+				choiceNum = Integer.parseInt(sc.nextLine());
+				switch (choiceNum) {
+				case ADMINMENU_CHOICE.USER:
+					MenuViewer.userManage();
+					userManageMenu();
+					break;
+				case ADMINMENU_CHOICE.OTT:
+					MenuViewer.ottManage();
+					ottManageMenu();
+					break;
+				case ADMINMENU_CHOICE.BACK:
+					return;
+				default:
+					System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+					break;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// ott 관리 메뉴
+	public static void ottManageMenu() {
+		int choiceNum;
+		OttManager ottManager = new OttManager();
+		choiceNum = Integer.parseInt(sc.nextLine());
+		switch (choiceNum) {
+		case OTTMANAGE_CHOICE.OTTSEARCH:
+			ottManager.ottSearch();
+			break;
+		case OTTMANAGE_CHOICE.OTTUPDATE:
+			ottManager.ottUpdate();
+			break;
+		case OTTMANAGE_CHOICE.OTTCREATE:
+			ottManager.ottCreate();
+			break;
+		case OTTMANAGE_CHOICE.OTTDELETE:
+			ottManager.ottDelete();
+			break;
+		case OTTMANAGE_CHOICE.BACK:
+			break;
+		default:
+			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			break;
+		}
+	}
+
+	// 유저 관리 메뉴
+	public static void userManageMenu() {
+		int choiceNum;
+		UserManager userManager = new UserManager();
+		choiceNum = Integer.parseInt(sc.nextLine());
+		switch (choiceNum) {
+		case USERMANAGER_CHOICE.USERSEARCH:
+			userManager.userSearch();
+			break;
+		case USERMANAGER_CHOICE.USERUPDATE:
+			userManager.userUpdate();
+			break;
+		case USERMANAGER_CHOICE.USERDELETE:
+			userManager.userDelete();
+			break;
+		case USERMANAGER_CHOICE.BACK:
+			break;
+		default:
+			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			break;
+		}
+	}
+
+	// 멤버쉽 메뉴
+	public static void membershipMenu(ProfileVO pro) {
+		int choice = 0;
+		UserManager userManager = new UserManager();
+		String membership = userManager.userMembership(pro);
+		MenuViewer.membershipMenuViewer();
+		choice = Integer.parseInt(sc.nextLine());
 		switch (choice) {
-		case TOP5_CHOICE.WATCH:
-			number = OttDAO.numberOption();
-			OttDAO.watchOtt(number, pro);
+		case MEMBERSHIP_CHOICE.BUY:
+			userManager.membershipChoose(membership,pro);
 			break;
-		case TOP5_CHOICE.ADD:
-			number = OttDAO.numberOption();
-			OttDAO.addOtt(number, pro);
-			break;
-		case TOP5_CHOICE.DOWN:
-			number = OttDAO.numberOption();
-			OttDAO.downOtt(number, pro);
-			return;
-		case TOP5_CHOICE.BACK:
+		case MEMBERSHIP_CHOICE.BACK:
 			return;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
@@ -368,84 +439,36 @@ public class JavflixMain {
 		}
 	}
 
-	public static void categoryMenu(ProfileVO pro) throws InterruptedException {
+	// 계정 관리 메뉴
+	public static ProfileVO accountMenu(ProfileVO pro) {
 		int choice = 0;
-		OttManager ottManager = new OttManager();
-		MenuViewer.categoryMenuView();
+		ProfileManager profileManager = new ProfileManager();
+		UserManager userManager = new UserManager();
+		MenuViewer.accountMenuView();
 		choice = Integer.parseInt(sc.nextLine());
-		OttManager.categoryList(choice);
-		MenuViewer.watchListMenuViewer();
-		int number = 0;
-		number = Integer.parseInt(sc.nextLine());
-		switch (number) {
-		case TOP5_CHOICE.WATCH:
-			number = OttDAO.numberOption();
-			OttDAO.watchOtt(number, pro);
-			break;
-		case TOP5_CHOICE.ADD:
-			number = OttDAO.numberOption();
-			OttDAO.addOtt(number, pro);
-			break;
-		case TOP5_CHOICE.DOWN:
-			number = OttDAO.numberOption();
-			OttDAO.downOtt(number, pro);
-			return;
-		case TOP5_CHOICE.BACK:
-			return;
-		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-			break;
-		}
-	}
-
-	public static void countryMenu(ProfileVO pro) throws InterruptedException {
-		int choice = 0;
-		OttManager ottManager = new OttManager();
-		MenuViewer.countryMenuView();
-		choice = Integer.parseInt(sc.nextLine());
-		OttManager.countryList(choice);
-		MenuViewer.watchListMenuViewer();
-		int number = 0;
-		number = Integer.parseInt(sc.nextLine());
-		switch (number) {
-		case TOP5_CHOICE.WATCH:
-			number = OttDAO.numberOption();
-			OttDAO.watchOtt(number, pro);
-			break;
-		case TOP5_CHOICE.ADD:
-			number = OttDAO.numberOption();
-			OttDAO.addOtt(number, pro);
-			break;
-		case TOP5_CHOICE.DOWN:
-			number = OttDAO.numberOption();
-			OttDAO.downOtt(number, pro);
-			return;
-		case TOP5_CHOICE.BACK:
-			return;
-		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
-			break;
-		}
-	}
-
-	public static void searchMenu(ProfileVO pro) throws InterruptedException {
-		int choice = 0;
-		OttManager ottManager = new OttManager();
-		MenuViewer.ottMenuView();
-		choice = Integer.parseInt(sc.nextLine());
-
+		ProfileVO profile = new ProfileVO();
 		switch (choice) {
-		case OTT_CHOICE.CHOOSE:
-			ottManager.ottList(pro);
+		case ACCOUNT_CHOICE.NAMECHANGE:
+			profileManager.nameChange(pro);
 			break;
-		case OTT_CHOICE.SEARCH:
-			ottManager.searchOttList(pro);
+		case ACCOUNT_CHOICE.PASSCHANGE:
+			profileManager.passChange(pro);
 			break;
-		case OTT_CHOICE.BACK:
-			return;
+		case ACCOUNT_CHOICE.NEWPROFILE:
+			profileManager.passCreate(pro);
+			break;
+		case ACCOUNT_CHOICE.PROFILECHANGE:
+			profile = profileManager.proChange(pro);
+			break;
+		case ACCOUNT_CHOICE.ACCOUNTPASS:
+			userManager.accountPass(pro);
+			break;
+		case ACCOUNT_CHOICE.BACK:
+			break;
 		default:
 			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
 			break;
 		}
+		return profile;
 	}
 }

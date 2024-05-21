@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import model.OttVO;
 import model.ProfileVO;
 import model.UserVO;
 
@@ -321,7 +322,7 @@ public class UserDAO {
 				user = userList.get(i);
 				System.out.print((i + 1) + ". " + user.getUser_id() + " ");
 			}
-			user = userList.get(Integer.parseInt(sc.nextLine()));
+			user = userList.get(Integer.parseInt(sc.nextLine())-1);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -438,4 +439,119 @@ public class UserDAO {
 		return user_membership;
 	}
 
+	
+	public void printUser(ProfileVO pro) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		UserVO user = new UserVO();
+		ArrayList<UserVO> userList = new ArrayList();
+		ProfileVO profile = new ProfileVO();
+		ArrayList<ProfileVO> profileList = new ArrayList();
+		boolean flag = false;
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "select * from jav_user where user_id = ?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, pro.getUser_id());
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int user_num = rs.getInt("user_num");
+				String user_name = rs.getString("user_name");
+				String user_id = rs.getString("user_id");
+				String user_pass = rs.getString("user_pass");
+				String user_phone = rs.getString("user_phone");
+				String user_membership = rs.getString("user_membership");
+				user = new UserVO(user_num, user_name, user_id, user_pass, user_phone, user_membership);
+				userList.add(user);
+			}
+			String sql1 = "select * from jav_profile where user_id = ?";
+			pstmt = con.prepareStatement(sql1);
+			pstmt.setString(1, pro.getUser_id());
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int profile_num = rs.getInt("profile_num");
+				String profile_name = rs.getString("profile_name");
+				String profile_pass = rs.getString("profile_pass");
+				String user_id = rs.getString("user_id");
+				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
+				profileList.add(profile);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		for (int i = 0; i < userList.size(); i++) {
+			user = userList.get(i);
+			System.out.println("성함: \t"+user.getUser_name());
+			System.out.println("ID: \t"+user.getUser_id());
+			System.out.println("비밀번호:  "+user.getUser_pass());
+			System.out.println("전화번호:  "+user.getUser_phone());
+			System.out.println("멤버쉽: \t"+user.getUser_membership());
+		}
+		for (int i = 0; i < profileList.size(); i++) {
+			profile = profileList.get(i);
+			System.out.println("프로필: \t"+profile.getProfile_name());
+			System.out.println("");
+		}
+	}
+
+	public void membershipChange(int number, ProfileVO pro) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		UserVO user = new UserVO();
+		String membership = null;
+		if(number ==1) {
+			membership = "premium";
+		} else {
+			membership = "gold";
+		}
+		try {
+			con = DBUtil.makeConnection();
+			String sql = "update jav_user set user_membership = ? where user_id =?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, membership);
+			pstmt.setString(2, pro.getUser_id());
+			int i = pstmt.executeUpdate();
+			if (i == 1) {
+//				System.out.println(user.getUser_id() + " 멤버쉽 변경 완료!");
+			} else {
+				System.out.println("정보 업데이트 실패했습니다. ");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 }

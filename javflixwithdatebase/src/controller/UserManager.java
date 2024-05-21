@@ -131,21 +131,22 @@ public class UserManager {
 			System.out.println("premium 등급으로 이번 달 남은 일수 * 요금제 금액차이 = "+ Math.round(now.getDayOfMonth()/30.0*5000)   + "원입니다. 금액은 다음달 핸드폰 요금에 청구됩니다.");
 		} else {
 			System.out.println("gold 등급으로 이번 달 남은 일수 * 요금제 금액차이 = "+ Math.round(now.getDayOfMonth()/30.0*5000) + "원입니다. 금액은 다음달 핸드폰 요금에 청구됩니다.");
-			System.out.println("premium 등급으로 이번 달 남은 일수 * 요금제 금액차이 = "+ Math.round(now.getDayOfMonth()/30.0*5000) + "원입니다. 금액은 다음달 핸드폰 요금에 청구됩니다.");
+			System.out.println("premium 등급으로 이번 달 남은 일수 * 요금제 금액차이 = "+ Math.round(now.getDayOfMonth()/30.0*10000) + "원입니다. 금액은 다음달 핸드폰 요금에 청구됩니다.");
 		}
 		return membership;
 	}
 
-	public void membershipChoose(String membership) {
+	public void membershipChoose(String membership, ProfileVO pro) {
 		UserDAO ud = new UserDAO();
+		int number = 0;
 		if(membership.equals("premium")) {
 			System.out.println("이미 결제 중입니다.");
 		} else if(membership.equals("gold")){			
 			System.out.println("premium 등급으로 변경되었습니다. 감사합니다. ");
 		} else {
 			System.out.println("멤버쉽를 결정하세요.");
-			System.out.print("1. premium 2. gold");
-			int number = Integer.parseInt(sc.nextLine());
+			System.out.print("1. premium 2. gold  ");
+			number = Integer.parseInt(sc.nextLine());
 			if(number==1) {
 				System.out.println("premium 등급으로 변경되었습니다. 감사합니다. ");
 			} else if(number ==2) {
@@ -154,6 +155,12 @@ public class UserManager {
 				System.out.println("잘못 입력했습니다.");
 			}
 		}
+		ud.membershipChange(number,pro);
+	}
+
+	public void userPrint(ProfileVO pro) {
+		UserDAO ud = new UserDAO();
+		ud.printUser(pro);
 	}
 
 }

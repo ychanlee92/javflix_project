@@ -18,7 +18,7 @@ public class DBUtil {
 		String filePath = "D:/doitjava/githubjavflix/javflixwithdatebase/db.properties";
 		Properties properties = new Properties();
 		properties.load(new FileReader(filePath));
-		
+
 		String url = properties.getProperty("url");
 		String user = properties.getProperty("user");
 		String password = properties.getProperty("password");
@@ -46,32 +46,35 @@ public class DBUtil {
 		String filePath = "D:/doitjava/githubjavflix/javflixwithdatebase/db.properties";
 		Properties properties = new Properties();
 		properties.load(new FileReader(filePath));
-		System.out.print("ID를 입력하세요: ");
-		String id = sc.nextLine();
-		System.out.print("비밀번호를 입력하세요: ");
-		String pw = sc.nextLine();
 		String url = properties.getProperty("url");
 		String user = properties.getProperty("user");
 		String password = properties.getProperty("password");
 		Connection con = null;
-		if (id.equals(user) && pw.equals(password)) {
-			// 오라클 데이터베이스 객체 참조 변수
-			// oracle jdbc library class load
-			try {
-				Class.forName("oracle.jdbc.driver.OracleDriver");
+		for (;;) {
+			System.out.print("ID를 입력하세요: ");
+			String id = sc.nextLine();
+			System.out.print("비밀번호를 입력하세요: ");
+			String pw = sc.nextLine();
+			if (id.equals(user) && pw.equals(password)) {
+				// 오라클 데이터베이스 객체 참조 변수
+				// oracle jdbc library class load
+				try {
+					Class.forName("oracle.jdbc.driver.OracleDriver");
 //			System.out.println("jdbc driver load success");
-				con = DriverManager.getConnection(url, user, password);
+					con = DriverManager.getConnection(url, user, password);
 //			System.out.println("database connection success");
-				System.out.println("로그인 성공!");
-			} catch (ClassNotFoundException e) {
-				System.out.println("loading failure");
-				e.printStackTrace();
-			} catch (SQLException e) {
-				System.out.println("connection fail");
-				e.printStackTrace();
+					System.out.println("로그인 성공!");
+				} catch (ClassNotFoundException e) {
+					System.out.println("loading failure");
+					e.printStackTrace();
+				} catch (SQLException e) {
+					System.out.println("connection fail");
+					e.printStackTrace();
+				}
+				break;
+			} else {
+				System.out.println("로그인 정보가 일치하지 않습니다.");
 			}
-		} else {
-			System.out.println("로그인 정보가 일치하지 않습니다.");
 		}
 		return con;
 	}

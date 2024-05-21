@@ -8,7 +8,8 @@ public class MenuViewer {
 		System.out.println("3. 카테고리별 검색 4. 국가별 검색");
 		System.out.println("5. 내가 찜한 목록 6. 다운로드 목록");
 		System.out.println("7. 시청목록 8. 계정 관리");
-		System.out.print("9. 멤버쉽 결제 10. 뒤로가기  ");
+		System.out.println("9. 멤버쉽 결제 10. 내 정보 조회  ");
+		System.out.print("11. 로그아웃  ");
 	}
 	//유저 메뉴
 	public static void accountMenuView() {

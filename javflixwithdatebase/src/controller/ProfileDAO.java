@@ -239,10 +239,19 @@ public class ProfileDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		ProfileVO profile = new ProfileVO();
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_profile set profile_name = ? where profile_name =?";
+			String sql = "alter table jav_cart disable constraint jav_cart_jav_profile_name_fk";
 			pstmt = con.prepareStatement(sql);
+			int value = pstmt.executeUpdate();
+			String sql1 = "update jav_cart set profile_name = ? where profile_name = ?";
+			pstmt = con.prepareStatement(sql1);
+			pstmt.setString(1, string);
+			pstmt.setString(2, pro.getProfile_name());
+			value = pstmt.executeUpdate();
+			String sql2 = "update jav_profile set profile_name = ? where profile_name =?";
+			pstmt = con.prepareStatement(sql2);
 			pstmt.setString(1, string);
 			pstmt.setString(2, pro.getProfile_name());
 			int i = pstmt.executeUpdate();
@@ -251,6 +260,9 @@ public class ProfileDAO {
 			} else {
 				System.out.println("정보 업데이트 실패했습니다. ");
 			}
+			String sql3 = "alter table jav_cart enable constraint jav_cart_jav_profile_name_fk";
+			pstmt = con.prepareStatement(sql3);
+			value = pstmt.executeUpdate();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
