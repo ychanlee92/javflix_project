@@ -55,10 +55,10 @@ public class JavflixMain {
 				UserManager.signUp();
 				break;
 			case LOGIN_CHOICE.END: // 사용종료
-				System.out.println("종료되었습니다.");
+				System.out.println("The program has been terminated");
 				return;
 			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				System.out.println("Incorrect choice, please choose the option again");
 				break;
 			}
 		}
@@ -70,9 +70,9 @@ public class JavflixMain {
 		boolean flag = false;
 		UserVO user = UserManager.login();
 		if (user.getUser_id() == null) {
-			System.out.println("로그인 정보가 일치하지 않습니다.");
+			System.out.println("Failed to login due to incorrect user information");
 		} else {
-			System.out.println("로그인 성공!");
+			System.out.println("Login Success!");
 			ProfileVO profile = ProfileManager.profileCheck(user);
 			ProfileVO pro = ProfileManager.profileLogin(profile, user);
 			while (!flag) {
@@ -114,7 +114,7 @@ public class JavflixMain {
 					flag = true;
 					break;
 				default:
-					System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+					System.out.println("Incorrect choice, please choose the option again");
 					break;
 				}
 			}
@@ -138,7 +138,7 @@ public class JavflixMain {
 		case OTT_CHOICE.BACK:
 			return;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -168,7 +168,7 @@ public class JavflixMain {
 		case TOP5_CHOICE.BACK:
 			return;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -199,7 +199,7 @@ public class JavflixMain {
 		case TOP5_CHOICE.BACK:
 			return;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -230,7 +230,7 @@ public class JavflixMain {
 		case TOP5_CHOICE.BACK:
 			return;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -242,7 +242,7 @@ public class JavflixMain {
 		OttManager ottManager = new OttManager();
 		boolean flag = ottManager.addList(pro);
 		if (flag == true) {
-			System.out.println("장바구니가 비었습니다.");
+			System.out.println("My List is empty");
 		} else {
 			MenuViewer.addListMenuViewer();
 			choice = Integer.parseInt(sc.nextLine());
@@ -262,7 +262,7 @@ public class JavflixMain {
 			case ADDLIST_CHOICE.BACK:
 				return;
 			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				System.out.println("Incorrect choice, please choose the option again");
 				break;
 			}
 		}
@@ -275,7 +275,7 @@ public class JavflixMain {
 		OttManager ottManager = new OttManager();
 		boolean flag = ottManager.downList(pro);
 		if (flag == true) {
-			System.out.println("장바구니가 비었습니다.");
+			System.out.println("Download list is empty");
 		} else {
 			MenuViewer.downListMenuViewer();
 			choice = Integer.parseInt(sc.nextLine());
@@ -295,7 +295,7 @@ public class JavflixMain {
 			case DOWNLIST_CHOICE.BACK:
 				return;
 			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				System.out.println("Incorrect choice, please choose the option again");
 				break;
 			}
 		}
@@ -308,7 +308,7 @@ public class JavflixMain {
 		OttManager ottManager = new OttManager();
 		boolean flag = ottManager.watchList(pro);
 		if (flag == true) {
-			System.out.println("장바구니가 비었습니다.");
+			System.out.println("You haven't seen any otts yet");
 		} else {
 			MenuViewer.watchListMenuViewer();
 			choice = Integer.parseInt(sc.nextLine());
@@ -328,7 +328,7 @@ public class JavflixMain {
 			case WATCHLIST_CHOICE.BACK:
 				return;
 			default:
-				System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+				System.out.println("Incorrect choice, please choose the option again");
 				break;
 			}
 		}
@@ -360,7 +360,7 @@ public class JavflixMain {
 				case ADMINMENU_CHOICE.BACK:
 					return;
 				default:
-					System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+					System.out.println("Incorrect choice, please choose the option again");
 					break;
 				}
 			}
@@ -392,7 +392,7 @@ public class JavflixMain {
 		case OTTMANAGE_CHOICE.BACK:
 			break;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -415,7 +415,7 @@ public class JavflixMain {
 		case USERMANAGER_CHOICE.BACK:
 			break;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -434,7 +434,7 @@ public class JavflixMain {
 		case MEMBERSHIP_CHOICE.BACK:
 			return;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 	}
@@ -466,7 +466,7 @@ public class JavflixMain {
 		case ACCOUNT_CHOICE.BACK:
 			break;
 		default:
-			System.out.println("잘못 입력했습니다. 다시 입력하세요.");
+			System.out.println("Incorrect choice, please choose the option again");
 			break;
 		}
 		return profile;

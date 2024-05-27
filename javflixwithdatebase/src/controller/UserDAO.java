@@ -1,10 +1,12 @@
 package controller;
 
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -14,6 +16,7 @@ import model.UserVO;
 
 public class UserDAO {
 	public static Scanner sc = new Scanner(System.in);
+
 	public static boolean idCheck(String id) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
@@ -99,21 +102,19 @@ public class UserDAO {
 	public static void userInsert(UserVO user) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "insert into jav_user values (user_sep.nextval, ?,?,?,?,?)";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, user.getUser_name());
-			pstmt.setString(2, user.getUser_id());
-			pstmt.setString(3, user.getUser_pass());
-			pstmt.setString(4, user.getUser_phone());
-			pstmt.setString(5, user.getUser_membership());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(user.getUser_id() + " 정보가 입력되었습니다.");
-			} else {
-				System.out.println("사용자 정보 입력 실패했습니다.");
-			}
+			cstmt = con.prepareCall("{CALL createuser(?,?,?,?,?,?)}");
+			cstmt.setString(1, user.getUser_name());
+			cstmt.setString(2, user.getUser_id());
+			cstmt.setString(3, user.getUser_pass());
+			cstmt.setString(4, user.getUser_phone());
+			cstmt.setString(5, user.getUser_membership());
+			cstmt.registerOutParameter(6, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(6);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -180,18 +181,16 @@ public class UserDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_user set user_pass = ? where user_id =?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, pass);
-			pstmt.setString(2, pro.getUser_id());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(pro.getUser_id() + " 계정 비밀번호 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL changeuserpass(?,?,?)}");
+			cstmt.setString(1, pass);
+			cstmt.setString(2, pro.getUser_id());
+			cstmt.registerOutParameter(3, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(3);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -259,21 +258,19 @@ public class UserDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_user set user_name = ?, user_id = ?, user_pass = ?, user_phone = ? where user_id =?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, user.getUser_name());
-			pstmt.setString(2, user.getUser_id());
-			pstmt.setString(3, user.getUser_pass());
-			pstmt.setString(4, user.getUser_phone());
-			pstmt.setString(5, us.getUser_id());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(user.getUser_id() + " 계정 비밀번호 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL changeuser(?,?,?,?,?,?)}");
+			cstmt.setString(1, user.getUser_name());
+			cstmt.setString(2, user.getUser_id());
+			cstmt.setString(3, user.getUser_pass());
+			cstmt.setString(4, user.getUser_phone());
+			cstmt.setString(5, us.getUser_id());
+			cstmt.registerOutParameter(6, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(6);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -317,12 +314,12 @@ public class UserDAO {
 				user = new UserVO(user_num, user_name, user_id, user_pass, user_phone, user_membership);
 				userList.add(user);
 			}
-			System.out.print("사용자 ID를 선택하세요: ");
+			System.out.print("ID 번호를 선택하세요: ");
 			for (int i = 0; i < userList.size(); i++) {
 				user = userList.get(i);
 				System.out.print((i + 1) + ". " + user.getUser_id() + " ");
 			}
-			user = userList.get(Integer.parseInt(sc.nextLine())-1);
+			user = userList.get(Integer.parseInt(sc.nextLine()) - 1);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -350,6 +347,7 @@ public class UserDAO {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		UserVO user = new UserVO();
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_user order by user_num";
@@ -367,19 +365,12 @@ public class UserDAO {
 			}
 			System.out.print("삭제할 유저 ID를 입력하세요: ");
 			String id = sc.nextLine();
-			sql = "delete from jav_profile where user_id = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, id);
-			pstmt.executeUpdate();
-			sql = "delete from jav_user where user_id = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, id);
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println("삭제되었습니다.");
-			} else {
-				System.out.println("삭제 실패했습니다.");
-			}
+			cstmt = con.prepareCall("{CALL deleteuser(?,?)}");
+			cstmt.setString(1, id);
+			cstmt.registerOutParameter(2, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(2);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -439,7 +430,6 @@ public class UserDAO {
 		return user_membership;
 	}
 
-	
 	public void printUser(ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
@@ -498,17 +488,17 @@ public class UserDAO {
 		}
 		for (int i = 0; i < userList.size(); i++) {
 			user = userList.get(i);
-			System.out.println("성함: \t"+user.getUser_name());
-			System.out.println("ID: \t"+user.getUser_id());
-			System.out.println("비밀번호:  "+user.getUser_pass());
-			System.out.println("전화번호:  "+user.getUser_phone());
-			System.out.println("멤버쉽: \t"+user.getUser_membership());
+			System.out.println("성함: \t" + user.getUser_name());
+			System.out.println("ID: \t" + user.getUser_id());
+			System.out.println("비밀번호:  " + user.getUser_pass());
+			System.out.println("전화번호:  " + user.getUser_phone());
+			System.out.println("멤버쉽: \t" + user.getUser_membership());
 		}
 		for (int i = 0; i < profileList.size(); i++) {
 			profile = profileList.get(i);
-			System.out.println("프로필: \t"+profile.getProfile_name());
-			System.out.println("");
+			System.out.println("프로필: \t" + profile.getProfile_name());
 		}
+		System.out.println("");
 	}
 
 	public void membershipChange(int number, ProfileVO pro) {
@@ -517,23 +507,21 @@ public class UserDAO {
 		ResultSet rs = null;
 		UserVO user = new UserVO();
 		String membership = null;
-		if(number ==1) {
+		CallableStatement cstmt = null;
+		if (number == 1) {
 			membership = "premium";
 		} else {
 			membership = "gold";
 		}
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_user set user_membership = ? where user_id =?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, membership);
-			pstmt.setString(2, pro.getUser_id());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-//				System.out.println(user.getUser_id() + " 멤버쉽 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL changemembership(?,?,?)}");
+			cstmt.setString(1, membership);
+			cstmt.setString(2, pro.getUser_id());
+			cstmt.registerOutParameter(3, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(3);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {

@@ -1,10 +1,12 @@
 package controller;
 
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -21,23 +23,21 @@ public class ProfileDAO {
 	public static void profileInsert(ProfileVO profile) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "insert into jav_profile values (profile_sep.nextval,?,?,?)";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, profile.getProfile_name());
+			cstmt = con.prepareCall("{CALL createprofile(?,?,?,?)}");
+			cstmt.setString(1, profile.getProfile_name());
 			if (profile.getProfile_pass().equals("-1")) {
-				pstmt.setString(2, null);
+				cstmt.setString(2, null);
 			} else {
-				pstmt.setString(2, profile.getProfile_pass());
+				cstmt.setString(2, profile.getProfile_pass());
 			}
-			pstmt.setString(3, profile.getUser_id());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(profile.getProfile_name() + " 정보가 입력되었습니다.");
-			} else {
-				System.out.println("사용자 정보 입력 실패했습니다.");
-			}
+			cstmt.setString(3, profile.getUser_id());
+			cstmt.registerOutParameter(4, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(4);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -129,7 +129,7 @@ public class ProfileDAO {
 						profile = profileList.get(i);
 						System.out.print((i + 1) + ". " + profile.getProfile_name() + " ");
 					}
-					profile = profileList.get(Integer.parseInt(sc.nextLine())-1);
+					profile = profileList.get(Integer.parseInt(sc.nextLine()) - 1);
 					if (profile.getProfile_pass() != null) {
 						System.out.print("비밀번호를 입력하세요: ");
 						if (profile.getProfile_pass().equals(sc.nextLine())) {
@@ -187,7 +187,6 @@ public class ProfileDAO {
 				profile = new ProfileVO(profile_num, profile_name, profile_pass, user_id);
 				profileList.add(profile);
 			}
-			System.out.println(profileList);
 			List<String> list = profileList.stream().map(s -> s.getProfile_name()).collect(Collectors.toList());
 			if (list.getFirst().equals(list.getLast())) {
 
@@ -207,6 +206,9 @@ public class ProfileDAO {
 						} else {
 							System.out.println("로그인 정보가 맞지 않습니다. ");
 						}
+					} else {
+						System.out.println("현재 프로필: " + profile.getProfile_name());
+						break;
 					}
 
 				}
@@ -239,30 +241,16 @@ public class ProfileDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		ProfileVO profile = new ProfileVO();
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "alter table jav_cart disable constraint jav_cart_jav_profile_name_fk";
-			pstmt = con.prepareStatement(sql);
-			int value = pstmt.executeUpdate();
-			String sql1 = "update jav_cart set profile_name = ? where profile_name = ?";
-			pstmt = con.prepareStatement(sql1);
-			pstmt.setString(1, string);
-			pstmt.setString(2, pro.getProfile_name());
-			value = pstmt.executeUpdate();
-			String sql2 = "update jav_profile set profile_name = ? where profile_name =?";
-			pstmt = con.prepareStatement(sql2);
-			pstmt.setString(1, string);
-			pstmt.setString(2, pro.getProfile_name());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(string + " 프로필 이름 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
-			String sql3 = "alter table jav_cart enable constraint jav_cart_jav_profile_name_fk";
-			pstmt = con.prepareStatement(sql3);
-			value = pstmt.executeUpdate();
+			cstmt = con.prepareCall("{CALL changeprofilename(?,?,?)}");
+			cstmt.setString(1, string);
+			cstmt.setString(2, pro.getProfile_name());
+			cstmt.registerOutParameter(3, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(3);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
@@ -288,18 +276,17 @@ public class ProfileDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_profile set profile_pass = ? where profile_name = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, nextLine);
-			pstmt.setString(2, pro.getProfile_name());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(nextLine + " 프로필 비밀번호 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL changeprofilepass(?,?,?)}");
+			cstmt.setString(1, nextLine);
+			cstmt.setString(2, pro.getProfile_name());
+			cstmt.registerOutParameter(3, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(3);
+			System.out.println(message);
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {

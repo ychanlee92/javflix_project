@@ -59,8 +59,7 @@ public class ProfileVO {
 
 	@Override
 	public String toString() {
-		return "[" + profile_num + "\t|" + profile_name + "\t|"
-				+ profile_pass + "\t|" + user_id + "]";
+		return " " + profile_name + " ";
 	}
 	
 	

@@ -71,7 +71,7 @@ public class UserVO {
 	@Override
 	public String toString() {
 		return "[" + user_num + "\t|" + user_name + "\t|" + user_id + "\t|"
-				+ user_pass + "\t|" + user_phone + "\t|" + user_membership + "]";
+				+ user_pass + "\t|" + user_phone + "\t|" + user_membership + "   \t]";
 	}
 	
 	

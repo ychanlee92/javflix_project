@@ -1,10 +1,12 @@
 package controller;
 
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -51,19 +53,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -71,18 +61,18 @@ public class OttDAO {
 		for (int i = 0; i < ottList.size(); i++) {
 			OttVO ott = ottList.get(i);
 			System.out.printf("%-3d %1s", ott.getOtt_num(), "|");
-			if (ott.getOtt_title().length() < 18) {
-				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
+			if (ott.getOtt_title().length() < 15) {
+				System.out.printf("%-22s %1s", ott.getOtt_title(), "\t|");
 			} else {
-				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
+				System.out.printf("%-17s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
 			}
 			System.out.print(ott.getOtt_country() + "\t|");
-			if(ott.getOtt_story().length()>25) {
-				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");				
+			if (ott.getOtt_story().length() > 25) {
+				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
 			} else {
-				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");	
+				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");
 			}
-			System.out.print(ott.getOtt_genre() + "\t|");				
+			System.out.print(ott.getOtt_genre() + "\t|");
 			if (ott.getOtt_actor().length() < 10) {
 				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
 			} else {
@@ -141,19 +131,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -193,6 +171,7 @@ public class OttDAO {
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
 		ArrayList<CartVO> cartList = new ArrayList();
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_ott order by ott_num";
@@ -243,31 +222,25 @@ public class OttDAO {
 					System.out.println("이미 다운받은 ott입니다.");
 				} else if (cartList.stream()
 						.anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name()) && s.getOtt_num() == number)) {
-					String sql4 = "update jav_cart set cart_down = ? where ott_num = ?";
-					pstmt = con.prepareStatement(sql4);
-					pstmt.setString(1, "다운완료");
-					pstmt.setInt(2, number);
-					int i = pstmt.executeUpdate();
-					if (i == 1) {
-						System.out.println(number + "번 ott 다운로드가 완료되었습니다.");
-					} else {
-						System.out.println("정보 입력 실패했습니다.");
-					}
-
+					cstmt = con.prepareCall("{CALL downott(?,?,?,?)}");
+					cstmt.setString(1, pro.getProfile_name());
+					cstmt.setInt(2, number);
+					cstmt.setString(3, "다운완료");
+					cstmt.registerOutParameter(4, Types.VARCHAR);
+					cstmt.executeUpdate();
+					String message = cstmt.getString(4);
+					System.out.println(message);
 				} else {
-					String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
-					pstmt = con.prepareStatement(sql4);
-					pstmt.setString(1, pro.getProfile_name());
-					pstmt.setInt(2, number);
-					pstmt.setString(3, "미시청");
-					pstmt.setString(4, "다운완료");
-					pstmt.setString(5, "미추가");
-					int i = pstmt.executeUpdate();
-					if (i == 1) {
-						System.out.println(number + "번 ott 다운로드가 완료되었습니다.");
-					} else {
-						System.out.println("정보 입력 실패했습니다.");
-					}
+					cstmt = con.prepareCall("{CALL addott2(?,?,?,?,?,?)}");
+					cstmt.setString(1, pro.getProfile_name());
+					cstmt.setInt(2, number);
+					cstmt.setString(3, "미시청");
+					cstmt.setString(4, "다운완료");
+					cstmt.setString(5, "미추가");
+					cstmt.registerOutParameter(6, Types.VARCHAR);
+					cstmt.executeUpdate();
+					String message = cstmt.getString(6);
+					System.out.println(message);
 				}
 			}
 		} catch (IOException e) {
@@ -275,19 +248,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -297,6 +258,7 @@ public class OttDAO {
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
 		ArrayList<CartVO> cartList = new ArrayList();
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_ott order by ott_num";
@@ -336,49 +298,32 @@ public class OttDAO {
 				System.out.println("이미 찜한 ott입니다.");
 			} else if (cartList.stream()
 					.anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name()) && s.getOtt_num() == number)) {
-				String sql3 = "update jav_cart set cart_add = ? where ott_num = ?";
-				pstmt = con.prepareStatement(sql3);
-				pstmt.setString(1, "찜완료");
-				pstmt.setInt(2, number);
-				int i = pstmt.executeUpdate();
-				if (i == 1) {
-					System.out.println(number + "번 ott 찜하기가 완료되었습니다.");
-				} else {
-					System.out.println("정보 입력 실패했습니다. ");
-				}
+				cstmt = con.prepareCall("{CALL addott(?,?,?,?)}");
+				cstmt.setString(1, pro.getProfile_name());
+				cstmt.setInt(2, number);
+				cstmt.setString(3, "찜완료");
+				cstmt.registerOutParameter(4, Types.VARCHAR);
+				cstmt.executeUpdate();
+				String message = cstmt.getString(4);
+				System.out.println(message);
 			} else {
-				String sql3 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
-				pstmt = con.prepareStatement(sql3);
-				pstmt.setString(1, pro.getProfile_name());
-				pstmt.setInt(2, number);
-				pstmt.setString(3, "미시청");
-				pstmt.setString(4, "미다운로드");
-				pstmt.setString(5, "찜완료");
-				int i = pstmt.executeUpdate();
-				if (i == 1) {
-					System.out.println(number + "번 ott 찜하기가 완료되었습니다.");
-				} else {
-					System.out.println("정보 입력 실패했습니다. ");
-				}
+				cstmt = con.prepareCall("{CALL addott2(?,?,?,?,?,?)}");
+				cstmt.setString(1, pro.getProfile_name());
+				cstmt.setInt(2, number);
+				cstmt.setString(3, "미시청");
+				cstmt.setString(4, "미다운로드");
+				cstmt.setString(5, "찜완료");
+				cstmt.registerOutParameter(6, Types.VARCHAR);
+				cstmt.executeUpdate();
+				String message = cstmt.getString(6);
+				System.out.println(message);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -386,6 +331,7 @@ public class OttDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		OttVO ott = new OttVO();
 		ArrayList<CartVO> cartList = new ArrayList();
 		try {
@@ -444,52 +390,35 @@ public class OttDAO {
 				System.out.println(number + "번 ott 시청완료!");
 			} else if (cartList.stream().anyMatch(s -> s.getProfile_name().equals(pro.getProfile_name())
 					&& s.getOtt_num() == number && !cart.getCart_seen().equals("시청함"))) {
-				String sql4 = "update jav_cart set cart_seen = ?";
-				pstmt = con.prepareStatement(sql4);
-				pstmt.setString(1, "시청함");
-				int i = pstmt.executeUpdate();
-				if (i == 1) {
-					System.out.println(number + "번 ott 시청완료!");
-				} else {
-					System.out.println("시청 정보를 업데이트 실패했습니다. ");
-				}
+				cstmt = con.prepareCall("{CALL watchott(?,?,?,?)}");
+				cstmt.setString(1, pro.getProfile_name());
+				cstmt.setInt(2, number);
+				cstmt.setString(3, "시청함");
+				cstmt.registerOutParameter(4, Types.VARCHAR);
+				cstmt.executeUpdate();
+				String message = cstmt.getString(4);
+				System.out.println(message);
 			} else {
-				String sql4 = "insert into jav_cart values (cart_sep.nextval,?,?,?,?,?)";
-				pstmt = con.prepareStatement(sql4);
-				pstmt.setString(1, pro.getProfile_name());
-				pstmt.setInt(2, number);
-				pstmt.setString(3, "시청함");
-				pstmt.setString(4, "미다운로드");
-				pstmt.setString(5, "미추가");
-				int i = pstmt.executeUpdate();
-				if (i == 1) {
-					System.out.println(number + "번 ott 시청완료!");
-				} else {
-					System.out.println("시청 정보를 업데이트 실패했습니다. ");
-				}
+				cstmt = con.prepareCall("{CALL watchott2(?,?,?,?,?,?)}");
+				cstmt.setString(1, pro.getProfile_name());
+				cstmt.setInt(2, number);
+				cstmt.setString(3, "시청함");
+				cstmt.setString(4, "미다운로드");
+				cstmt.setString(5, "미추가");
+				cstmt.registerOutParameter(6, Types.VARCHAR);
+				cstmt.executeUpdate();
+				String message = cstmt.getString(6);
+				System.out.println(message);
 			}
-			String sql5 = "update jav_ott set ott_view = ott_view + 1 where ott_num = ?";
-			pstmt = con.prepareStatement(sql5);
-			pstmt.setInt(1, number);
-			pstmt.executeUpdate();
+			cstmt = con.prepareCall("{CALL ottview(?)}");
+			cstmt.setInt(1, number);
+			cstmt.executeUpdate();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -544,19 +473,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 		return flag;
 	}
@@ -572,7 +489,11 @@ public class OttDAO {
 			} else {
 				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
 			}
-			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			if (ott.getOtt_story().length() >= 25) {
+				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			} else {
+				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");
+			}
 			System.out.print(ott.getOtt_genre() + "\t|");
 			System.out.print(ott.getOtt_rate() + "\t|");
 			System.out.print(cart.getCart_seen() + "\t|");
@@ -585,39 +506,25 @@ public class OttDAO {
 	public static void deleteOtt(int number, ProfileVO pro) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
+		CallableStatement cstmt = null;
 		ResultSet rs = null;
 		OttVO ott = new OttVO();
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "delete from jav_cart where ott_num = ? and profile_name = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setInt(1, number);
-			pstmt.setString(2, pro.getProfile_name());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(number + "번 ott가 삭제되었습니다.");
-			} else {
-				System.out.println("삭제 실패했습니다.");
-			}
+			cstmt = con.prepareCall("{CALL ottdelete(?,?)}");
+			cstmt.setInt(1, number);
+			cstmt.registerOutParameter(2, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(2);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(con);
 		}
+
 	}
 
 	public boolean ottDownList(ProfileVO pro) {
@@ -672,19 +579,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 		return flag;
 	}
@@ -740,19 +635,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 		return flag;
 	}
@@ -782,19 +665,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -822,8 +693,8 @@ public class OttDAO {
 				Double ott_rate = rs.getDouble("ott_rate");
 				String ott_age = rs.getString("ott_age");
 				int ott_view = rs.getInt("ott_view");
-				OttVO ott = new OttVO(ott_num,ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director, ott_year,
-						ott_rate, ott_age, ott_view);
+				OttVO ott = new OttVO(ott_num, ott_title, ott_country, ott_story, ott_genre, ott_actor, ott_director,
+						ott_year, ott_rate, ott_age, ott_view);
 				ottList.add(ott);
 			}
 			printTop5OttList(ottList);
@@ -832,19 +703,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -853,13 +712,17 @@ public class OttDAO {
 			OttVO ott = ottList.get(i);
 			System.out.printf("%-3d %1s", i + 1, "|");
 			System.out.printf("%-3d %1s", ott.getOtt_num(), "|");
-			if (ott.getOtt_title().length() < 18) {
-				System.out.printf("%-20s %1s", ott.getOtt_title(), "\t|");
+			if (ott.getOtt_title().length() < 15) {
+				System.out.printf("%-22s %1s", ott.getOtt_title(), "\t|");
 			} else {
-				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
+				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 16) + "..", "\t|");
 			}
 			System.out.print(ott.getOtt_country() + "\t|");
-			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			if (ott.getOtt_story().length() >= 25) {
+				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			} else {
+				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");
+			}
 			System.out.print(ott.getOtt_genre() + "\t|");
 			if (ott.getOtt_actor().length() < 10) {
 				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
@@ -873,7 +736,8 @@ public class OttDAO {
 			}
 			System.out.print(ott.getOtt_year() + "\t|");
 			System.out.print(ott.getOtt_rate() + "\t|");
-			System.out.print(ott.getOtt_age() + "|");
+			System.out.print(ott.getOtt_age() + "\t|");
+			System.out.print(ott.getOtt_view() + "\t|");
 			System.out.println("");
 		}
 	}
@@ -883,7 +747,6 @@ public class OttDAO {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<OttVO> ottList = new ArrayList();
-		int rownum = 0;
 		String genre = null;
 		try {
 			con = DBUtil.makeConnection();
@@ -928,19 +791,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -949,7 +800,6 @@ public class OttDAO {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<OttVO> ottList = new ArrayList();
-		int rownum = 0;
 		String genre = null;
 		try {
 			con = DBUtil.makeConnection();
@@ -990,19 +840,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -1038,19 +876,7 @@ public class OttDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
@@ -1064,7 +890,11 @@ public class OttDAO {
 				System.out.printf("%-18s %1s", ott.getOtt_title().substring(0, 15) + "..", "\t|");
 			}
 			System.out.print(ott.getOtt_country() + "\t|");
-			System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			if (ott.getOtt_story().length() >= 25) {
+				System.out.printf("%-25s %1s", ott.getOtt_story().substring(0, 23) + "..", "\t|");
+			} else {
+				System.out.printf("%-25s %1s", ott.getOtt_story(), "\t\t|");
+			}
 			System.out.print(ott.getOtt_genre() + "\t|");
 			if (ott.getOtt_actor().length() < 10) {
 				System.out.printf("%-10s %1s", ott.getOtt_actor(), "\t|");
@@ -1088,90 +918,61 @@ public class OttDAO {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "update jav_user set ott_name = ?, ott_title = ?, ott_country = ?, ott_ story = ?, ott_genre = ?, ott_actor = ?, ott_director = ?, ott_year = ?, ott_rate = ?, ott_age = ? where ott_num = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, ott.getOtt_title());
-			pstmt.setString(2, ott.getOtt_country());
-			pstmt.setString(3, ott.getOtt_story());
-			pstmt.setString(4, ott.getOtt_genre());
-			pstmt.setString(5, ott.getOtt_actor());
-			pstmt.setString(6, ott.getOtt_director());
-			pstmt.setString(7, ott.getOtt_year());
-			pstmt.setDouble(8, ott.getOtt_rate());
-			pstmt.setString(9, ott.getOtt_age());
-			pstmt.setInt(10, ott.getOtt_num());
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println(ott.getOtt_num() + "번 ott 변경 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL updateott(?,?,?,?,?,?,?,?,?,?,?)}");
+			cstmt.setString(1, ott.getOtt_title());
+			cstmt.setString(2, ott.getOtt_country());
+			cstmt.setString(3, ott.getOtt_story());
+			cstmt.setString(4, ott.getOtt_genre());
+			cstmt.setString(5, ott.getOtt_actor());
+			cstmt.setString(6, ott.getOtt_director());
+			cstmt.setString(7, ott.getOtt_year());
+			cstmt.setDouble(8, ott.getOtt_rate());
+			cstmt.setString(9, ott.getOtt_age());
+			cstmt.setInt(10, num);
+			cstmt.registerOutParameter(11, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(11);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(rs, pstmt, con);
 		}
 	}
 
 	public void createOtt(OttVO ott) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
-		ResultSet rs = null;
+		CallableStatement cstmt = null;
 		int view = 0;
 		try {
 			con = DBUtil.makeConnection();
-			String sql = "insert into jav_ott values (ott_sep.nextval,?,?,?,?,?,?,?,?,?,?) ";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, ott.getOtt_title());
-			pstmt.setString(2, ott.getOtt_country());
-			pstmt.setString(3, ott.getOtt_story());
-			pstmt.setString(4, ott.getOtt_genre());
-			pstmt.setString(5, ott.getOtt_actor());
-			pstmt.setString(6, ott.getOtt_director());
-			pstmt.setString(7, ott.getOtt_year());
-			pstmt.setDouble(8, ott.getOtt_rate());
-			pstmt.setString(9, ott.getOtt_age());
-			pstmt.setInt(10, view);
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println("ott 생성 완료!");
-			} else {
-				System.out.println("정보 업데이트 실패했습니다. ");
-			}
+			cstmt = con.prepareCall("{CALL createott(?,?,?,?,?,?,?,?,?,?,?)}");
+			cstmt.setString(1, ott.getOtt_title());
+			cstmt.setString(2, ott.getOtt_country());
+			cstmt.setString(3, ott.getOtt_story());
+			cstmt.setString(4, ott.getOtt_genre());
+			cstmt.setString(5, ott.getOtt_actor());
+			cstmt.setString(6, ott.getOtt_director());
+			cstmt.setString(7, ott.getOtt_year());
+			cstmt.setDouble(8, ott.getOtt_rate());
+			cstmt.setString(9, ott.getOtt_age());
+			cstmt.setInt(10, view);
+			cstmt.registerOutParameter(11, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(11);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (con != null) {
-					con.close();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			DBUtil.closeResource(pstmt, con);
 		}
 	}
 
@@ -1180,6 +981,7 @@ public class OttDAO {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		ArrayList<OttVO> ottList = new ArrayList();
+		CallableStatement cstmt = null;
 		try {
 			con = DBUtil.makeConnection();
 			String sql = "select * from jav_ott order by ott_num";
@@ -1204,15 +1006,12 @@ public class OttDAO {
 			printOttTotalList(ottList);
 			System.out.print("삭제할 ott 번호를 입력하세요: ");
 			int number = Integer.parseInt(sc.nextLine());
-			sql = "delete from jav_ott where ott_num = ?";
-			pstmt = con.prepareStatement(sql);
-			pstmt.setInt(1, number);
-			int i = pstmt.executeUpdate();
-			if (i == 1) {
-				System.out.println("삭제되었습니다.");
-			} else {
-				System.out.println("삭제 실패했습니다.");
-			}
+			cstmt = con.prepareCall("{CALL ottdelete(?,?)}");
+			cstmt.setInt(1, number);
+			cstmt.registerOutParameter(2, Types.VARCHAR);
+			cstmt.executeUpdate();
+			String message = cstmt.getString(2);
+			System.out.println(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
